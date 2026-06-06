@@ -22,7 +22,7 @@ export class PerformanceMonitor {
             backdrop-filter: blur(10px);
             color: rgb(214, 214, 214);
             font-family: "Roboto Mono", monospace;
-            font-size: 12px;
+            font-size: 9px;
             padding: 10px;
             border-radius: 4px;
             z-index: 1000;
@@ -44,6 +44,7 @@ export class PerformanceMonitor {
         
         // Get renderer info
         const info = renderer.info;
+        console.log(info)
         this.drawCalls = info.render.calls;
         this.triangles = info.render.triangles;
         
@@ -75,9 +76,8 @@ export class PerformanceMonitor {
         
         container.innerHTML = `
             <div>FPS: ${this.fps}</div>
-            <div>Draw Calls: ${this.drawCalls}</div>
+            <div>Draw Calls: ${this.drawCalls.toLocaleString()}</div>
             <div>Triangles: ${this.triangles.toLocaleString()}</div>
-            <div>${lodInfo || 'No LOD objects'}</div>
             <div>Memory: ${(performance.memory?.usedJSHeapSize / 1048576).toFixed(1)} MB</div>
         `;
     }
