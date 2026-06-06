@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 import { PerformanceMonitor } from './utils/performanceMonitor.js'
 import { FrameProfiler } from './utils/frameProfiler.js';
@@ -19,7 +20,7 @@ document.body.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 const mouse = new THREE.Vector2();
 
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(-70,70,50);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -39,10 +40,10 @@ const light = new THREE.DirectionalLight(0xffffff, 0.5);
 light.position.set( 10,10,0 )
 scene.add(light);
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 1.5); // Color, Intensity
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Color, Intensity
 scene.add(ambientLight);
 
-const gridHelper = new THREE.GridHelper( 100, 50 ); // ( size, divisions )
+const gridHelper = new THREE.GridHelper( 100, 50, 0x444444, 0x444444 ); // ( size, divisions )
 gridHelper.position.set(21, -1, -30);
 scene.add( gridHelper );
 
@@ -68,7 +69,7 @@ async function initBase() {
     const gltf = await loader_instance.loadAsync('sixty5-structural.glb')
     
     const material = new THREE.MeshStandardMaterial({
-        color: "#7e7e7e",
+        color: "#a1a1a1",
         transparent: true,
         opacity: 1.0,
         depthWrite: true
@@ -306,6 +307,8 @@ function queryNearInstances( cameraPos ) {
 
     });
 
+    querySphere.radius = CONSTANTS.FOCUS_RADIUS;
+
     bvh_struct.shapecast({
         intersectsBounds : ( box ) => {
 
@@ -333,6 +336,8 @@ function updateLODs( cameraPos ) {
             batchedMesh.setGeometryIdAt( id, hiresGeomIdFor[ id ] );
             if ( CONSTANTS.changeLODcolor ) {
                 batchedMesh.setColorAt( id, highlightColor );
+            } else {
+                batchedMesh.setColorAt( id, nonHighlightColor );
             }
         };
     });
@@ -379,14 +384,14 @@ function configGUI() {
 
     const gui = new GUI();
 
-    gui.add(CONSTANTS, "SEARCH_RADIUS", 5, 20, 1).name("Search Radius").onChange( v => {
-        CONSTANTS.SEARCH_RADIUS = v;
+    gui.add(CONSTANTS, "FOCUS_RADIUS", 0, 20, 1).name("Search Radius").onChange( v => {
+        CONSTANTS.FOCUS_RADIUS = v;
         requestRender();
     });
 
-    gui.add(CONSTANTS, "changeLODcolor").name("Change LOD Color").onChange( v => {
+    gui.add(CONSTANTS, "changeLODcolor").name("Highlight LOD").onChange( v => {
         CONSTANTS.changeLODcolor = v;
-        batchedMesh.setColorAt( id, nonHighlightColor );
+        requestRender();
     })
 }
 
