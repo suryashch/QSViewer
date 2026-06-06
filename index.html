@@ -14,9 +14,9 @@
         <script type="importmap">
             {
                 "imports": {
-                    "three": "./node_modules/three/build/three.module.js",
-                    "three/addons/": "./node_modules/three/examples/jsm/",
-                    "three-mesh-bvh": "./node_modules/three-mesh-bvh/build/index.module.js"
+                    "three": "https://unpkg.com/three@v0.184.0/build/three.module.js",
+                    "three/addons/": "https://unpkg.com/three@latest/examples/jsm/",
+                    "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.9.10/build/index.module.js",
                 }
             }
         </script>
@@ -25,15 +25,21 @@
   <div id="heading">
     <h2 class="text-pane bot-left">
         <a href="https://threejs.org" target="_blank" rel="noopener", style="color:#3FDCFB">three.js</a>    |    batchedMesh - LOD - bvh   |    inspired by <a href="https://github.com/gkjohnson/three-mesh-bvh" target="_blank" rel="noopener" style="color:#3FDCFB"> gkjohnson</a><br/>
-        23k objects - instanced and batched. TLAS BVH, shapecasted with camera-sphere. <br>
+        23k objects - batched and LOD controlled. TLAS BVH, shapecasted with camera-sphere. <br>
         Zoom in to swap LOD's. Double click to shift focus. <br>
         Model credits: <a href="https://github.com/buildingsmart-community" target="_blank" rel="noopener", style="color:#3FDCFB">buildingSMART-community</a>. <br>
     </h2>
-    <h2 class="text-pane bot-right">
-        <a href="reports/a-game-dev-approach-to-bim.md" target="_blank" rel="noopener", style="color:#3FDCFB">A Game Dev Approach to BIM</a>
-    </h2>
-
-    <div class="border"></div>
+    
+    <div class="border">
+        <div id="social-links">
+            <hr> <div class="link-group">
+                <a href="reports/a-game-dev-approach-to-bim.md" target="_blank" rel="noopener">A Game Dev Approach to BIM</a> <br>
+                <a href="https://github.com/suryashch/QSViewer" target="_blank" rel="noopener">v0.1.0</a>
+            </div>
+    
+        </div>
+        
+    </div>
   </div>
   <script type="module" src="./scripts/main.js"></script>
 </body>
