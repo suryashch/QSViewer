@@ -18,11 +18,11 @@ export class PerformanceMonitor {
             position: fixed;
             top: 10px;
             left: 10px;
-            background: rgba(19, 20, 28, 0.85);
+            // background: rgba(19, 20, 28, 0.85);
             backdrop-filter: blur(10px);
-            color: rgb(214, 214, 214);
+            color: rgb(161, 161, 161);
             font-family: "Roboto Mono", monospace;
-            font-size: 9px;
+            font-size: 10px;
             padding: 10px;
             border-radius: 4px;
             z-index: 1000;
