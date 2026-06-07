@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
-import { PerformanceMonitor } from './utils/PerformanceMonitor.js'
+import { PerformanceMonitor } from './utils/PerformanceMonitor.js';
 import { FrameProfiler } from './utils/FrameProfiler.js';
 
 import { ObjectBVH, acceleratedRaycast, INTERSECTED, NOT_INTERSECTED, computeBatchedBoundsTree } from 'three-mesh-bvh';
@@ -119,9 +119,9 @@ async function loadFiles( loader ) {
 
     const _files = [
         "sixty5-mep_hires.glb",
-        "sixty5-mep_lowres.glb",
-        "sixty5-W-installatie_hires.glb",
-        "sixty5-W-installatie_lowres.glb"
+        "sixty5-mep_lowres.glb"
+        // "sixty5-W-installatie_hires.glb",
+        // "sixty5-W-installatie_lowres.glb"
     ];
 
     for (const fileName of _files) {
