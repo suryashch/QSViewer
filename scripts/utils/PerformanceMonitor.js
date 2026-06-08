@@ -20,7 +20,7 @@ export class PerformanceMonitor {
             left: 10px;
             // background: rgba(19, 20, 28, 0.85);
             backdrop-filter: blur(10px);
-            color: rgb(161, 161, 161);
+            color: rgb(65, 65, 65);
             font-family: "Roboto Mono", monospace;
             font-size: 10px;
             padding: 10px;
