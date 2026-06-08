@@ -12,7 +12,8 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor("#262837");
+renderer.setClearColor("#9c9c9c");
+// renderer.setClearColor("#262837");
 renderer.setPixelRatio(window.devicePixelRatio);
 
 document.body.appendChild(renderer.domElement);
@@ -20,8 +21,15 @@ document.body.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 const mouse = new THREE.Vector2();
 
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(-70,70,50);
+// const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+// camera.position.set(-70,70,50);
+
+const camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 10, 1000 );
+scene.add( camera );
+camera.position.set(40,10,25);
+camera.zoom = 10;
+camera.updateProjectionMatrix();
+
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enablePan = true;
@@ -62,14 +70,41 @@ const CONSTANTS = {
 let bvh_struct;
 let batchedMesh_struct;
 
+
+// // Testing - Basic Loader
+
+// // const loader1 = new GLTFLoader().setPath('public/models/');
+// // loader1.load('sixty5-architectural-noglass_facade_external.glb', (gltf) => { // 'piperacks_merged.glb
+    
+// //     const mesh = gltf.scene
+// //     mesh.position.set(0,0,0);
+// //     mesh.material = new THREE.MeshStandardMaterial({
+// //         color:"#e0e0e0",
+// //     });
+// //     scene.add(mesh);
+// // });
+
+// const loader2 = new GLTFLoader().setPath('public/models/');
+// loader2.load('sixty5-structural.glb', (gltf) => { // 'piperacks_merged.glb
+    
+//     const mesh = gltf.scene
+//     mesh.position.set(0,0,0);
+//     mesh.material = new THREE.MeshStandardMaterial({
+//         color:"#e0e0e0",
+//     });
+//     scene.add(mesh);
+// });
+
+
 initBase();
 
 async function initBase() {
     const loader_instance = new GLTFLoader().setPath('public/models/');
     const gltf = await loader_instance.loadAsync('sixty5-structural.glb')
+    // const gltf = await loader_instance.loadAsync('sixty5-architectural-noglass_facade_external.glb')
     
     const material = new THREE.MeshStandardMaterial({
-        color: "#a1a1a1",
+        color: "#717171",
         transparent: true,
         opacity: 1.0,
         depthWrite: true
@@ -119,9 +154,9 @@ async function loadFiles( loader ) {
 
     const _files = [
         "sixty5-mep_hires.glb",
-        "sixty5-mep_lowres.glb"
-        // "sixty5-W-installatie_hires.glb",
-        // "sixty5-W-installatie_lowres.glb"
+        "sixty5-mep_lowres.glb",
+        "sixty5-W-installatie_hires.glb",
+        "sixty5-W-installatie_lowres.glb"
     ];
 
     for (const fileName of _files) {
@@ -448,6 +483,7 @@ let frameCount = 0;
 function animate() {
     
     requestAnimationFrame( animate );
+    renderer.render(scene, camera);
 
     perfMonitor.update(renderer, scene);
 
