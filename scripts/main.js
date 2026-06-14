@@ -64,7 +64,8 @@ raycaster.firstHitOnly = true;
 const CONSTANTS = {
     SEARCH_RADIUS: 15,
     FOCUS_RADIUS: 15,
-    changeLODcolor: true
+    changeLODcolor: true,
+    darkMode: false
 }
 
 let struct_bvh;
@@ -109,15 +110,20 @@ init();
 
 async function init() {
     let material_map = new Map();
+    let struct_map = new Map();
 
     const _focus = [
+        // "sixty5-mep_hires.glb",
+        // "sixty5-mep_lowres.glb",
+        // "sixty5-W-installatie_hires.glb",
+        // "sixty5-W-installatie_lowres.glb",
+    ]; // this group changes color
+
+    const _reference = [
         "sixty5-mep_hires.glb",
         "sixty5-mep_lowres.glb",
         "sixty5-W-installatie_hires.glb",
         "sixty5-W-installatie_lowres.glb",
-    ]; // this group changes color
-
-    const _reference = [
         "sixty5-interiors-kitchens.glb",
         "sixty5-interiors-kitchens_lowres.glb",
         "sixty5-architectural-noglass_interiors_rev2.glb",
@@ -134,20 +140,22 @@ async function init() {
         // transparent: true,
         // opacity: 1.0,
         // depthTest: true,
-        // depthWrite: true
+        // depthWrite: false
     });
 
     const structMaterial = new THREE.MeshStandardMaterial({
-        color: "#717171",
+        color: "#d9d8d8",
         transparent: true,
         opacity: 1.0,
-        // depthTest: true,
-        depthWrite: true
+        depthTest: true,
+        // depthWrite: false,
+        depthFunc: THREE.LessDepth,
+        forceSinglePass: true
     });
     
     material_map = await initFiles( _focus, material_map, "focus", defaultMaterial );
     material_map = await initFiles( _reference, material_map, "reference", defaultMaterial );
-    material_map = await initFiles( _facade, material_map, "facade", defaultMaterial );
+    struct_map = await initFiles( _facade, struct_map, "facade", structMaterial );
 
     for (const material of material_map.keys()) {
 
@@ -155,13 +163,23 @@ async function init() {
         const bm = await createBatchedMesh( meshes, material );
         bvh_group.add( bm );
     }
+
+    for (const material of struct_map.keys()) {
+
+        const meshes = struct_map.get( material );
+        const bm = await createBatchedMesh( meshes, material );
+        struct_group.add( bm );
+    }
     
-    console.log(bvh_group);
-    bvh = new ObjectBVH( bvh_group );
+    // console.log(bvh_group);
+    bvh = new ObjectBVH( [bvh_group, struct_group] );
 
     scene.add( bvh_group );
+    scene.add( struct_group );
 
     material_map = null;
+
+    configGUI();
 }
  
 async function initFiles( files, material_map, qsGroup= null, defMaterial= null ) {
@@ -176,7 +194,7 @@ async function initFiles( files, material_map, qsGroup= null, defMaterial= null 
         });
     } else {
         material = defMaterial;
-        material.transparent = true;
+        // material.transparent = true;
     }
     
     for (const _file of files) {
@@ -218,8 +236,8 @@ function createMaterialMap( gltf, material_map, defMaterial=null, qsGroup ){
             const meshId = child.userData.mesh_id;
             // console.log(child);
 
-            if (meshId === "166/50248") {
-                console.log(child)
+            if (meshId === "166/187597") {
+                // console.log(child)
             }
 
             let material;
@@ -302,9 +320,10 @@ function appendMaterialMap(gltf, material_map, defMaterial=null ) {
             let geometry;
 
             if (child.children.length > 0){
-                for (const subchild of child.children) {
-                    subchild.userData.mesh_id = meshId;
-                };
+                // for (const subchild of child.children) {
+                //     subchild.userData.mesh_id = meshId;
+                // };
+                console.log(child)
                 
                 return;     // If the object has more than one child (due to mutliple materials) only select the first
             };
@@ -386,6 +405,8 @@ function createBatchedMesh( meshes, material ){
 
                 batchedMesh.hiresGeomIdFor[ instanceId ] = geom_id;
                 batchedMesh.lowresGeomIdFor[ instanceId ] = lowres_geom_id;
+
+                batchedMesh.qsGroup = qsGroup;
 
                 if (qsGroup === "focus") {
                     focusIds.add(instanceId);
@@ -634,49 +655,82 @@ function queryNearInstances( cameraPos ) {
 
             object.setGeometryIdAt( instanceId, object.hiresGeomIdFor[ instanceId ] );
             
-            if (focusIds.has(instanceId)){
-                if ( CONSTANTS.changeLODcolor ) {
-                    object.setColorAt( instanceId, highlightColor );
-                }
-            } else if (referenceIds.has(instanceId)){
-                object.setVisibleAt( instanceId, true )
-            } else if (facadeIds.has(instanceId)) {
+            if (object.qsGroup === "facade") {
                 object.setColorAt( instanceId, structTrans )
+                structIds.add(instanceId);
+            } else if (object.qsGroup === "reference" || object.qsGroup === "focus") {
+                if (focusIds.has(instanceId)){
+                    if ( CONSTANTS.changeLODcolor ) {
+                        object.setColorAt( instanceId, highlightColor );
+                    }
+                } else if (referenceIds.has(instanceId)){
+                    object.setVisibleAt( instanceId, true )
+                }
+                nearIds.add( instanceId );
             }
 
-            nearIds.add( instanceId );
+            // if (focusIds.has(instanceId)){
+            //     if ( CONSTANTS.changeLODcolor ) {
+            //         object.setColorAt( instanceId, highlightColor );
+            //     }
+            // } else if (referenceIds.has(instanceId)){
+            //     object.setVisibleAt( instanceId, true )
+            // } else if (facadeIds.has(instanceId)) {
+            //     object.setColorAt( instanceId, structTrans )
+            // }
+
+            // nearIds.add( instanceId );
             return false;
         }
 
     });
 
-    return nearIds;
+    // querySphere.radius = CONSTANTS.FOCUS_RADIUS;
+
+    // struct_bvh.shapecast({
+
+    //     intersectsBounds : ( box ) => {
+
+    //         if (!querySphere.intersectsBox( box )) return NOT_INTERSECTED;
+    //         return INTERSECTED;
+    //     },
+    //     intersectsObject : ( object, instanceId ) => {
+
+    //         object.setGeometryIdAt( instanceId, object.hiresGeomIdFor[ instanceId ] );
+            
+    //         if (object.qsGroup === "facade") {
+    //             object.setColorAt( instanceId, structTrans )
+    //             structIds.add(instanceId);
+    //         }
+
+    //         // if (focusIds.has(instanceId)){
+    //         //     if ( CONSTANTS.changeLODcolor ) {
+    //         //         object.setColorAt( instanceId, highlightColor );
+    //         //     }
+    //         // } else if (referenceIds.has(instanceId)){
+    //         //     object.setVisibleAt( instanceId, true )
+    //         // } else if (facadeIds.has(instanceId)) {
+    //         //     object.setColorAt( instanceId, structTrans )
+    //         // }
+
+    //         // nearIds.add( instanceId );
+    //         return false;
+    //     }
+
+    // });
+
+    return [nearIds, structIds];
 };
 
 function updateLODs( cameraPos ) {
 
-    const newNear = queryNearInstances( cameraPos );
+    const [newNear, newStruct] = queryNearInstances( cameraPos );
     const bm = bvh_group.children.find(child => child.isBatchedMesh);
 
     const struct_bm = struct_group.children.find(child => child.isBatchedMesh);
 
-    // newNear.forEach(( id ) => {
-
-    //     if (!prevNear.has( id )) {
-
-    //         bm.setGeometryIdAt( id, bm.hiresGeomIdFor[ id ] );
-    //         if (focusIds.has(id)){
-    //             if ( CONSTANTS.changeLODcolor ) {
-    //                 bm.setColorAt( id, highlightColor );
-    //             }
-    //         } else if (facadeIds.has(id)){
-    //             bm.setColorAt( id, structTrans )
-    //         }
-    //     };
-    // });
-
     prevNear.forEach(( id ) =>{
-        const structOpaque = new THREE.Vector4(bm.colors[id].r, bm.colors[id].g, bm.colors[id].b, 1);
+        // const structOpaque = new THREE.Vector4(bm.colors[id].r, bm.colors[id].g, bm.colors[id].b, 1);
 
         if (!newNear.has( id )) {
 
@@ -687,16 +741,24 @@ function updateLODs( cameraPos ) {
                 }
             } else if (referenceIds.has(id)){
                 bm.setVisibleAt( id, false );
-            } else if (facadeIds.has(id)){
-                bm.setColorAt( id, structOpaque )
             }
-            
-            // bm.setColorAt( id, nonHighlightColor );
         };
     });
 
+    prevStruct.forEach(( id ) =>{
+        const structOpaque = new THREE.Vector4(struct_bm.colors[id].r, struct_bm.colors[id].g, struct_bm.colors[id].b, 1);
+
+        if (!newStruct.has( id )) {
+
+            if (facadeIds.has(id)){
+                struct_bm.setColorAt( id, structOpaque )
+            }
+            
+        };
+    });
 
     prevNear = newNear;
+    prevStruct = newStruct;
 };
 
 function onWindowResize() {
@@ -712,13 +774,19 @@ function configGUI() {
 
     const gui = new GUI();
 
-    gui.add(CONSTANTS, "FOCUS_RADIUS", 0, 20, 1).name("Search Radius").onChange( v => {
+    gui.add(CONSTANTS, "SEARCH_RADIUS", 0, 20, 1).name("Search Radius").onChange( v => {
         CONSTANTS.FOCUS_RADIUS = v;
         requestRender();
     });
 
     gui.add(CONSTANTS, "changeLODcolor").name("Highlight LOD").onChange( v => {
         CONSTANTS.changeLODcolor = v;
+        requestRender();
+    });
+
+    gui.add(CONSTANTS, "darkMode").name("Dark Mode").onChange( v => {
+        const renderBackgroundColor = v ? "#262837" : "#9c9c9c";
+        renderer.setClearColor(renderBackgroundColor)
         requestRender();
     })
 }
