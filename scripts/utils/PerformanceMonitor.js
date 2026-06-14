@@ -44,7 +44,7 @@ export class PerformanceMonitor {
         
         // Get renderer info
         const info = renderer.info;
-        console.log(info)
+        // console.log(info)
         this.drawCalls = info.render.calls;
         this.triangles = info.render.triangles;
         
