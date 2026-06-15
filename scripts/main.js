@@ -12,7 +12,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor("#9c9c9c");
+renderer.setClearColor("#8f8f8f");
 // renderer.setClearColor("#262837");
 renderer.setPixelRatio(window.devicePixelRatio);
 
@@ -47,7 +47,7 @@ const light = new THREE.DirectionalLight(0xffffff, 0.5);
 light.position.set( 10,10,0 )
 scene.add(light);
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Color, Intensity
+const ambientLight = new THREE.AmbientLight(0xffffff, 1); // Color, Intensity, 0.5
 scene.add(ambientLight);
 
 const gridHelper = new THREE.GridHelper( 100, 50, 0x444444, 0x444444 ); // ( size, divisions )
@@ -81,16 +81,16 @@ let facadeIds = new Set();
 
 // // Testing - Basic Loader
 
-// // const loader1 = new GLTFLoader().setPath('public/models/');
-// // loader1.load('sixty5-architectural-noglass_facade_external.glb', (gltf) => { // 'piperacks_merged.glb
+// const loader1 = new GLTFLoader().setPath('public/models/');
+// loader1.load('sixty5-W-installatie_hires.glb', (gltf) => { // 'piperacks_merged.glb
     
-// //     const mesh = gltf.scene
-// //     mesh.position.set(0,0,0);
-// //     mesh.material = new THREE.MeshStandardMaterial({
-// //         color:"#e0e0e0",
-// //     });
-// //     scene.add(mesh);
-// // });
+//     const mesh = gltf.scene
+//     mesh.position.set(0,0,0);
+//     mesh.material = new THREE.MeshStandardMaterial({
+//         color:"#e0e0e0",
+//     });
+//     scene.add(mesh);
+// });
 
 // const loader2 = new GLTFLoader().setPath('public/models/');
 // loader2.load('sixty5-structural.glb', (gltf) => { // 'piperacks_merged.glb
@@ -102,6 +102,8 @@ let facadeIds = new Set();
 //     });
 //     scene.add(mesh);
 // });
+
+
 
 
 const loader = new GLTFLoader().setPath('public/models/');
@@ -122,11 +124,11 @@ async function init() {
     const _reference = [
         "sixty5-mep_hires.glb",
         "sixty5-mep_lowres.glb",
-        // "sixty5-W-installatie_hires.glb",
-        // "sixty5-W-installatie_lowres.glb",
+        "sixty5-W-installatie_hires.glb",
+        "sixty5-W-installatie_lowres.glb",
         "sixty5-interiors-kitchens-final.glb",
         "sixty5-architectural-interiors-final.glb",
-        // "sixty5-E-installatie.glb",
+        "sixty5-E-installatie.glb",
         // "sixty5-architectural-insulation-final.glb"
     ]; // this group just stays as is
     
@@ -139,7 +141,9 @@ async function init() {
         // "sixty5-W-installatie_hires.glb",
         // "sixty5-W-installatie_lowres.glb",
         // "sixty5-interiors-kitchens-final.glb",
+        // "sixty5-architectural-insulation-final.glb",
         // "sixty5-architectural-interiors-final.glb",
+        // "sixty5-E-installatie.glb",
     ]; // this group turns transparent
 
     const defaultMaterial = new THREE.MeshLambertMaterial({
@@ -202,7 +206,6 @@ async function initFiles( files, material_map, qsGroup= null, defMaterial= null 
         });
     } else {
         material = defMaterial;
-        // material.transparent = true;
     }
     
     for (const _file of files) {
@@ -252,11 +255,6 @@ function createMaterialMap( gltf, material_map, qsGroup, defMaterial=null, color
             }
             
             const meshId = child.userData.mesh_id;
-            // console.log(child);
-
-            if (meshId === "166/5753931") {
-                console.log(child)
-            }
 
             let material;
             let geometry;
@@ -604,13 +602,13 @@ function configGUI() {
 
     const gui = new GUI();
 
-    gui.add(CONSTANTS, "SEARCH_RADIUS", 0, 20, 1).name("Search Radius").onChange( v => {
+    gui.add(CONSTANTS, "SEARCH_RADIUS", 0, 30, 1).name("Query Radius").onChange( v => {
         CONSTANTS.FOCUS_RADIUS = v;
         requestRender();
     });
 
     gui.add(CONSTANTS, "darkMode").name("Dark Mode").onChange( v => {
-        const renderBackgroundColor = v ? "#262837" : "#9c9c9c";
+        const renderBackgroundColor = v ? "#262837" : "#8f8f8f";
         renderer.setClearColor(renderBackgroundColor)
         requestRender();
     })
@@ -680,7 +678,6 @@ function animate() {
     
     requestAnimationFrame( animate );
     // renderer.render(scene, camera);
-
     perfMonitor.update(renderer, scene);
 
     // // Throttled Frame Refresh
