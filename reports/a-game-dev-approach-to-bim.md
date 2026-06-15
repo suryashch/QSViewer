@@ -6,7 +6,7 @@ Construction 3D models face unique challenges in the computer graphics space. Th
 
 ![QS Viewer - Cover Shot](img/cover-shot-penthouse-2-lowres.gif)
 
-This research builds on [prior work](improving-3d-model-performance-with-LOD.md), which I highly recommend you check out. As well, the primary intent of this paper is to build intuition, so code and technical wording will be limited. The [full repository](https://github.com/suryashch/LOD-control-with-threeJS), and accompanying [research body of knowledge](../research/optimizing-the-scene/batchedmesh-with-LOD.md) provide additional details to those interested.
+This research builds on [prior work](https://github.com/suryashch/3d_modelling/blob/main/reports/improving-3d-model-performance-with-LOD.md), which I highly recommend you check out. As well, the primary intent of this paper is to build intuition, so code and technical wording will be limited. The [full repository](https://github.com/suryashch/LOD-control-with-threeJS), and accompanying [research body of knowledge](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/batchedmesh-with-LOD.md) provide additional details to those interested.
 
 ## Background and Model
 
@@ -40,17 +40,17 @@ A 3D mesh consists of points in space connected by lines (known as `vertices` an
 
 ![Vertices, Edges, Triangles and Meshes](img/vertices-edges-triangles-mesh.png)
 
-[In prior work](per-object-lod-control-with-threejs.md), we were able to establish that dynamic switching between low and high resolution meshes improves performance of a 3D scene. In that example, the piperack mesh in the scene rendered in low resolution (less triangles) initially, and only swapped to full high definition when the user zoomed in past a point. These are shown in red and green, respectively.
+[In prior work](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/per-object-lod-control-with-threejs.md), we were able to establish that dynamic switching between low and high resolution meshes improves performance of a 3D scene. In that example, the piperack mesh in the scene rendered in low resolution (less triangles) initially, and only swapped to full high definition when the user zoomed in past a point. These are shown in red and green, respectively.
 
 ![Switching Between Low and High Res versions of a Mesh](img/first-working-lod-model.gif)
 
 Since the total number of triangles are reduced, the GPU performs better. We determined that this technique- called Level of Detail (LOD) modelling- improved performance of the scene on average by ~3x, while keeping `draw calls` constant. However, we did not elaborate more on that statement. What is a `Draw Call`?
 
-As the name suggests, a `Draw Call` is a command sent from the CPU to the GPU to 'draw' an object to the screen. It includes data about the [geometry, location and materials](draw-calls-in-scenes.md) of a mesh, for each mesh in the scene.
+As the name suggests, a `Draw Call` is a command sent from the CPU to the GPU to 'draw' an object to the screen. It includes data about the [geometry, location and materials](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/draw-calls-in-scenes.md) of a mesh, for each mesh in the scene.
 
 As the number of objects in the scene increase, so do the number of `draw calls` and if you aren't careful, this can significantly limit the performance capabilities of the scene well before GPU bottlenecks start emerging. In BIM models where we have lots of individual objects, this is especially an issue.
 
-Take for example, the MEP (Mechanical, Electrical, Plumbing) layer of our BIM model. If we load this raw model to our scene, we start to appreciate why `draw calls` need to be limited. We have ~22,000 individual objects in our model, each with its own `draw call`. Here is what the model looks like in our [basic scene](../research/hosting-3d-model/analysis_threejs.md).
+Take for example, the MEP (Mechanical, Electrical, Plumbing) layer of our BIM model. If we load this raw model to our scene, we start to appreciate why `draw calls` need to be limited. We have ~22,000 individual objects in our model, each with its own `draw call`. Here is what the model looks like in our [basic scene](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/analysis_threejs.md).
 
 ![Unedited version of Sixty5 MEP model](img/mep-baseline.gif)
 
@@ -100,7 +100,7 @@ To efficiently store our objects in the `BatchedMesh`, we need the following 4 d
 - The total number of expected `indices` in the scene (the collection of vertices used to construct a `triangle`),
 - The unique materials used in the scene.
 
-We acquire this information by iterating through every mesh in our scene, and saving the geometry data to a dictionary. We also keep track of the [transformation matrix](../research/hosting-3d-model/bpy_with_lod.md) of each mesh, as these store the location data of individual objects in the scene.
+We acquire this information by [iterating through every mesh in our scene](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/batched-mesh.md), and saving the geometry data to a dictionary. We also keep track of the [transformation matrix](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/bpy_with_lod.md) of each mesh, as these store the location data of individual objects in the scene.
 
 > Note: We must create one `BatchedMesh` object for every material in the scene. This is due to the architecture of the GPU and [Shader Programs](https://shader-tutorial.dev/basics/introduction/) specifically.
 
@@ -143,23 +143,21 @@ root
         └── matrix_data : [ transformation_matrix ]
 ```
 
-You can find more in-depth explanations on the creation of this dictionary and subsequent `BatchedMesh` objects [in the accompanying research document](../research/optimizing-the-scene/batched-mesh.md).
+You can find more in-depth explanations on the creation of this dictionary and subsequent `BatchedMesh` objects [in the accompanying research document](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/batchedmesh-with-LOD.md).
 
 Now, loading the same architectural model as above with `BatchedMesh` optimizations, this is what we observe.
 
-![Architectural Model Loaded to the Scene with BatchedMesh](../research/optimizing-the-scene/img/performance-results-architectural-optimized-noglass.png)
+![Architectural Model Loaded to the Scene with BatchedMesh](img/performance-results-architectural-optimized-noglass.png)
 
 Just by batching our scene, our FPS count has jumped up to ~70 FPS. All other metrics stayed the same- 1.6M triangles, 16k objects. From the image we observe 38 `draw calls` in our optimized scene. This implies that our scene contains 37 unique materials (one draw call is reserved for the 2D grid).
 
 ## Instancing
 
-Another powerful technique to improve the `draw calls` in the scene is known as [`Instancing`](../research/optimizing-the-scene/instanced-mesh.md). This process works best when you have multiple objects in a scene that all share the same geometry. Think leaves on a tree, bolts in a steel beam, 90 degree elbows on a pipe- all are essentially the same object, just loaded to different positions.
+Another powerful technique to improve the `draw calls` in the scene is known as [`Instancing`](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/instanced-mesh.md). This process works best when you have multiple objects in a scene that all share the same geometry. Think leaves on a tree, bolts in a steel beam, 90 degree elbows on a pipe- all are essentially the same object, just loaded to different positions.
 
 ![Instancing Example. Credit: three.js](img/instancing-threejs-example.gif)
 
 Since these items all share the exact same geometry, we can send one `draw call` containing the geometry information, alongside a list containing the location information for each individual `instance`.
-
-
 
 As a happy side effect, this also improves the memory usage of the scene since we only need to save one object's geometry data, but can reference it many times.
 
@@ -219,17 +217,17 @@ And what do the results look like? Here, we use the MEP model for testing.
 
 We see a definite improvement over the baseline however, we're not out of the woods yet. Looking at the `InstancedMesh` results, we see one glaringly obvious oversight- the draw calls are still ridiculously high. We have reduced the total number of individual draw calls, but without [Batching](#batching-the-scene), we will still end up running in circles.
 
-To truly optimize our scene, we need to combine the benefits of `instancing` as well as `batching`, and is explained more in the [instanced-mesh research write-up](../research/optimizing-the-scene/instanced-mesh.md). Once we instance AND batch our scene, these are the performance results we see.
+To truly optimize our scene, we need to combine the benefits of `instancing` as well as `batching`, and is explained more in the [instanced-mesh research write-up](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/instanced-mesh.md). Once we instance AND batch our scene, these are the performance results we see.
 
 ![Instancing Within BatchedMesh Results](img/instancedmesh-versus-batchedmesh-versus-baseline.png)
 
-From the results, we observe a total of 39 draw calls (one for each material), and a blazing fast performance figure (~120 FPS)- even better than the [simple batching](../research/optimizing-the-scene/batched-mesh.md) approach from earlier (~70 FPS). As briefly mentioned above, we also notice a drastic reduction in the total memory consumption of the scene.
+From the results, we observe a total of 39 draw calls (one for each material), and a blazing fast performance figure (~120 FPS)- even better than the [simple batching](#batching-the-scene) approach from earlier (~70 FPS). As briefly mentioned above, we also notice a drastic reduction in the total memory consumption of the scene.
 
-These results alone would be enough for computers to comfortably render, but we will take this one step further by adding [LOD control](../research/hosting-3d-model/basic-lod-control-with-threejs.md) to the mix.
+These results alone would be enough for computers to comfortably render, but we will take this one step further by adding [LOD control](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/basic-lod-control-with-threejs.md) to the mix.
 
 ## LOD Control
 
-Now that we have addressed the `draw calls` issue, the focus shifts back to the GPU side, namely- limiting the number of `triangles` that need to get drawn to the screen. As determined in [previous research](per-object-lod-control-with-threejs.md), this can be managed with Level of Detail (LOD) control. This process entails loading a low resolution mesh to the scene and swapping to a high resolution one when the user zooms in, resulting in vastly improved rendering time.
+Now that we have addressed the `draw calls` issue, the focus shifts back to the GPU side, namely- limiting the number of `triangles` that need to get drawn to the screen. As determined in [previous research](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/per-object-lod-control-with-threejs.md), this can be managed with Level of Detail (LOD) control. This process entails loading a low resolution mesh to the scene and swapping to a high resolution one when the user zooms in, resulting in vastly improved rendering time.
 
 ![Per Object LOD Control](img/refined-lod-model.gif)
 
@@ -309,9 +307,11 @@ Now, we just need to write some logical code that tests the distance between our
 
 Here are the performance metrics.
 
-![BatchedMesh with LOD Results](img/mep-batchedmesh-basiclod-results.png)
+| Model | FPS | Draw Calls | Triangles |
+| ----- | --- | ---------- | --------- |
+| MEP | 16 | 39 | 5,704,625 |
 
-Some interesting observations. The number of triangles in the scene is down- roughly 30% of the original 8M. Draw calls are constant, ([consistent with our previous research](improving-3d-model-performance-with-LOD.md)).
+Some interesting observations. The number of triangles in the scene is down- 60% of the original 8M. Draw calls are constant, ([consistent with our previous research](improving-3d-model-performance-with-LOD.md)).
 
 However, the FPS figure is still on the lower side. Running some diagnostic tests, we see that the CPU is still dominating the resources of the scene. Digging a little further, it seems that our LOD system is conducting distance checks between our camera and every object in the scene, every frame. Since we have a large number of objects, this is ultimately whats causing the slowdown.
 
@@ -466,40 +466,46 @@ You can find more information about this research on my [github](https://github.
 
 ## Links
 
-[transformation matrices](../research/hosting-3d-model/bpy_with_lod.md)
+[Improving 3D Model Performance with LOD Control](https://github.com/suryashch/3d_modelling/blob/main/reports/improving-3d-model-performance-with-LOD.md)
 
-[full code](https://github.com/suryashch/LOD-control-with-threeJS)
+[QSViewer Github](https://github.com/suryashch/QSViewer)
 
-[Unity](https://unity.com/)
-
-[Unreal Engine](https://www.unrealengine.com/)
+[BatchedMesh with LOD](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/batchedmesh-with-LOD.md)
 
 [three.js](https://threejs.org/)
 
-[known as vertices and edges](../research/reducing-mesh-density/analysis_decimate.md)
-
-[research body of knowledge](../research/optimizing-the-scene/batchedmesh-with-LOD.md)
+[Sixty5](https://www.strijp-s.nl/en/building/sixty5)
 
 [buildingsmart-community](https://github.com/buildingsmart-community)
 
-[prior work](improving-3d-model-performance-with-LOD.md)
+[Per Object LOD Control with Three JS](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/per-object-lod-control-with-threejs.md)
+
+[Draw Calls in Scenes](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/draw-calls-in-scenes.md)
+
+[Hosting 3D Models on a Website](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/analysis_threejs.md)
 
 [BatchedMesh](https://threejs.org/docs/#BatchedMesh)
 
-[basic scene](analysis_threejs.md).
+[batchedMesh (writeup)](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/batched-mesh.md)
 
-[Sixty5](https://www.strijp-s.nl/en/building/sixty5)
+[Bpy with LOD](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/bpy_with_lod.md)
 
 [Shader Programs](https://shader-tutorial.dev/basics/introduction/)
 
-[Instancing Example](../research/optimizing-the-scene/img/instancing-threejs-example.gif)
+[InstancedMesh (writeup)](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/instanced-mesh.md)
 
 [InstancedMesh](https://threejs.org/docs/#InstancedMesh)
 
-[LOD control](../research/hosting-3d-model/basic-lod-control-with-threejs.md)
+[Basic LOD control with Three JS](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/basic-lod-control-with-threejs.md)
 
-[Three.LOD()](https://threejs.org/docs/#LOD)
+[Spatial Querying - The Octree](https://github.com/suryashch/octree/blob/main/reports/octree.md)
+
+[three.LOD()](https://threejs.org/docs/#LOD)
+
+[Bounding Volume Hierarchy - Wikipedia article](https://en.wikipedia.org/wiki/Bounding_volume_hierarchy)
+
+[three-mesh-bvh](https://github.com/gkjohnson/three-mesh-bvh)
 
 [eventListeners](https://www.geeksforgeeks.org/javascript/javascript-addeventlistener-with-examples/)
 
-[Wikipedia article](https://en.wikipedia.org/wiki/Bounding_volume_hierarchy)
+[3d Modelling - Github](https://github.com/suryashch/3d_modelling)
