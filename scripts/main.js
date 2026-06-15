@@ -122,35 +122,42 @@ async function init() {
     const _reference = [
         "sixty5-mep_hires.glb",
         "sixty5-mep_lowres.glb",
-        "sixty5-W-installatie_hires.glb",
-        "sixty5-W-installatie_lowres.glb",
-        "sixty5-interiors-kitchens.glb",
-        "sixty5-interiors-kitchens_lowres.glb",
-        "sixty5-architectural-noglass_interiors_rev2.glb",
-        "sixty5-architectural-noglass_structural_interior.glb",
+        // "sixty5-W-installatie_hires.glb",
+        // "sixty5-W-installatie_lowres.glb",
+        "sixty5-interiors-kitchens-final.glb",
+        "sixty5-architectural-interiors-final.glb",
+        // "sixty5-E-installatie.glb",
+        // "sixty5-architectural-insulation-final.glb"
     ]; // this group just stays as is
     
     const _facade = [
-        "sixty5-architectural-noglass_facade_external.glb",
+        "sixty5-architectural-facade-final.glb",
+        // "sixty5-architectural-structure-final.glb",
         "sixty5-structural.glb",
+        // "sixty5-mep_hires.glb",
+        // "sixty5-mep_lowres.glb",
+        // "sixty5-W-installatie_hires.glb",
+        // "sixty5-W-installatie_lowres.glb",
+        // "sixty5-interiors-kitchens-final.glb",
+        // "sixty5-architectural-interiors-final.glb",
     ]; // this group turns transparent
 
-    const defaultMaterial = new THREE.MeshStandardMaterial({
+    const defaultMaterial = new THREE.MeshLambertMaterial({
         color: "#717171",
         // transparent: true,
         // opacity: 1.0,
-        // depthTest: true,
+        // depthTest: false,
         // depthWrite: false
     });
 
-    const structMaterial = new THREE.MeshStandardMaterial({
+    const structMaterial = new THREE.MeshLambertMaterial({
         color: "#d9d8d8",
         transparent: true,
         opacity: 1.0,
         depthTest: true,
         // depthWrite: false,
         depthFunc: THREE.LessDepth,
-        forceSinglePass: true
+        // forceSinglePass: true
     });
     
     material_map = await initFiles( _focus, material_map, "focus", defaultMaterial );
@@ -180,6 +187,7 @@ async function init() {
     material_map = null;
 
     configGUI();
+    requestRender();
 }
  
 async function initFiles( files, material_map, qsGroup= null, defMaterial= null ) {
@@ -204,8 +212,10 @@ async function initFiles( files, material_map, qsGroup= null, defMaterial= null 
 
         if (res === "lowres.glb") {
             material_map = await appendMaterialMap( gltf, material_map, material );
+        } else if (name === "sixty5-mep" || name === "sixty5-W-installatie"){
+            material_map = await createMaterialMap( gltf, material_map, qsGroup, material, new THREE.Color( "#F600C1" ) );
         } else {
-            material_map = await createMaterialMap( gltf, material_map, material, qsGroup );
+            material_map = await createMaterialMap( gltf, material_map, qsGroup, material  );
         }
     };
 
@@ -228,16 +238,24 @@ async function initFiles( files, material_map, qsGroup= null, defMaterial= null 
 }
 
 
-function createMaterialMap( gltf, material_map, defMaterial=null, qsGroup ){
+function createMaterialMap( gltf, material_map, qsGroup, defMaterial=null, color=null ){
 
     gltf.scene.traverse((child) => {
         if ( child.userData.mesh_id ) {
+
+            if ( !child.isMesh ) {
+                for (const subchild of child.children) {
+                    
+                    subchild.userData.mesh_id = subchild.name;
+
+                };
+            }
             
             const meshId = child.userData.mesh_id;
             // console.log(child);
 
-            if (meshId === "166/187597") {
-                // console.log(child)
+            if (meshId === "166/5753931") {
+                console.log(child)
             }
 
             let material;
@@ -248,22 +266,32 @@ function createMaterialMap( gltf, material_map, defMaterial=null, qsGroup ){
                 
                 for (const subchild of child.children) {
                     
-                    subchild.userData.mesh_id = meshId;
+                    subchild.userData.mesh_id = subchild.name;
 
                 };
                 
                 return;   // If the object has more than one child (due to multiple materials), append the mesh_id onto the children and continue
             };
 
+            if (child.material.transparent && child.material.opacity < 0.5) {
+                return
+            }
+
             geometry = child.geometry;
             inst_matrix = child.matrixWorld;
 
-            const childMaterialColor = child.material.color
+            let childMaterialColor;
 
             if ( defMaterial ) {
                 material = defMaterial;
             } else {
                 material = child.material;
+            }
+
+            if ( color ) {
+                childMaterialColor = color;
+            } else {
+                childMaterialColor = child.material.color;
             }
 
             // material.transparent = true;
@@ -320,9 +348,9 @@ function appendMaterialMap(gltf, material_map, defMaterial=null ) {
             let geometry;
 
             if (child.children.length > 0){
-                // for (const subchild of child.children) {
-                //     subchild.userData.mesh_id = meshId;
-                // };
+                for (const subchild of child.children) {
+                    subchild.userData.mesh_id = meshId;
+                };
                 console.log(child)
                 
                 return;     // If the object has more than one child (due to mutliple materials) only select the first
@@ -427,204 +455,6 @@ function createBatchedMesh( meshes, material ){
     return batchedMesh;
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-// let totalVertexCount = 0;
-// let totalIndexCount = 0;
-// let totalInstanceCount = 0;
-
-// let hiresGeomIdFor = [];
-// let lowresGeomIdFor = [];
-
-// let batchedMesh;
-// let bvh;
-// let final_map = new Map();
-
-
-// initDetails();
-
-// async function initDetails() {
-//     renderer.render(scene, camera);
-//     const loader = new GLTFLoader().setPath( 'public/models/' );
-    
-//     const status = await loadFiles( loader );
-    
-//     requestRender();
-
-//     configGUI();
-
-// };
-
-// async function loadFiles( loader ) {
-    
-//     // Need to sequentially populate the mesh_map
-
-//     const _files = [
-//         "sixty5-mep_hires.glb",
-//         "sixty5-mep_lowres.glb",
-//         "sixty5-W-installatie_hires.glb",
-//         "sixty5-W-installatie_lowres.glb"
-//     ];
-
-//     for (const fileName of _files) {
-
-//         let gltf = await loadGLTFfile( loader, fileName );
-        
-//         const [name, res] = fileName.split("_");
-        
-//         if (res === 'hires.glb') final_map = await initMap( gltf, final_map );
-//         if (res === 'lowres.glb') final_map = await appendMap( gltf, final_map );
-        
-//         gltf = null;
-
-//     };
-    
-//     batchedMesh = await generateBatchedMesh( final_map );
-//     bvh = new ObjectBVH( batchedMesh );
-//     scene.add( batchedMesh );
-
-//     return true;
-// };
-
-// function loadGLTFfile( loader, fileName ) {
-//     const gltf = loader.loadAsync( fileName );
-
-//     return gltf;
-// }
-
-// function generateBatchedMesh( final_map, material = new THREE.MeshStandardMaterial()) {
-
-//     const bm = new THREE.BatchedMesh(
-//         totalInstanceCount, 
-//         totalVertexCount, 
-//         totalIndexCount, 
-//         material
-//     );
-    
-//     final_map.forEach(( value, key ) => {
-
-//         const hires_geometry = value.get( "geometry_hires" );
-//         const matrices = value.get( "matrix" );
-
-//         if (matrices.length > 0) {
-            
-//             const hires_geomId = bm.addGeometry( hires_geometry );
-            
-//             let lowres_geomId
-
-//             if ( value.has( "geometry_lowres" ) ) {
-//                 lowres_geomId = bm.addGeometry( value.get( "geometry_lowres" ) );
-//             } else {
-//                 lowres_geomId = hires_geomId; 
-//             }
-
-//             for ( let i=0; i < matrices.length; i++ ){
-
-//                 const instanceId = bm.addInstance( lowres_geomId );
-
-//                 bm.setMatrixAt( instanceId, matrices[i] );
-
-//                 hiresGeomIdFor[ instanceId ] = hires_geomId;
-//                 lowresGeomIdFor[ instanceId ] = lowres_geomId;
-//             };
-
-//         };
-//     });
-
-//     // Memory Management
-//     final_map.forEach(( value ) => {
-//         const hires = value.get( "geometry_hires" );
-//         if ( hires ) hires.dispose();
-
-//         const lowres = value.get( "geometry_lowres" );
-//         if ( lowres && lowres !== hires ) lowres.dispose();
-//     });
-
-//     final_map.clear();
-//     final_map = null;
-    
-//     bm.needsUpdate = true;
-//     return bm;
-// };
-
-// function initMap( gltf, mesh_map ) {
-
-//     gltf.scene.traverse(( child ) => {
-
-//         if ( child.isMesh ){ 
-
-//             const geom = child.geometry;
-//             const mesh_id = child.userData.mesh_id;
-            
-//             const inst_matrix = child.matrixWorld.clone();
-
-//             if ( !mesh_map.has( mesh_id )) {
-                
-//                 // If map does not have the uuid already, first create it
-                
-//                 mesh_map.set( mesh_id, new Map() );
-
-//                 mesh_map.get( mesh_id ).set( "geometry_hires", geom );
-//                 mesh_map.get( mesh_id ).set( "matrix", [] );
-
-//                 mesh_map.get( mesh_id ).get( "matrix" ).push( inst_matrix );
-
-//                 totalVertexCount += geom.attributes.position.count;
-//                 totalIndexCount += geom.index.count;
-//                 totalInstanceCount += 1;
-            
-//             } else {
-                
-//                 // Map contains the uuid hence only need to push transformation matrix
-
-//                 mesh_map.get( mesh_id ).get( "matrix" ).push( inst_matrix );
-//                 totalInstanceCount += 1;
-
-//             };
-//         };
-//     });
-
-//     return mesh_map;
-// };
-
-// function appendMap( gltf, mesh_map ) {
-
-//     let visited = new Set();
-
-//     gltf.scene.traverse(( child ) => {
-
-//         if ( 
-//             child.isMesh && 
-//             mesh_map.has( child.userData.mesh_id ) &&
-//             !visited.has(child.userData.mesh_id)
-//         ) {
-//             const mesh_id = child.userData.mesh_id;
-//             const geom = child.geometry;
-            
-//             mesh_map.get( mesh_id ).set( "geometry_lowres", geom );
-
-//             totalVertexCount += geom.attributes.position.count;
-//             totalIndexCount += geom.index.count;
-//             totalInstanceCount += 1;
-
-//             visited.add( mesh_id );
-            
-//         };
-//     });
-
-//     return mesh_map;
-// };
 
 
 const querySphere = new THREE.Sphere();
@@ -779,11 +609,6 @@ function configGUI() {
         requestRender();
     });
 
-    gui.add(CONSTANTS, "changeLODcolor").name("Highlight LOD").onChange( v => {
-        CONSTANTS.changeLODcolor = v;
-        requestRender();
-    });
-
     gui.add(CONSTANTS, "darkMode").name("Dark Mode").onChange( v => {
         const renderBackgroundColor = v ? "#262837" : "#9c9c9c";
         renderer.setClearColor(renderBackgroundColor)
@@ -803,11 +628,17 @@ window.addEventListener('dblclick', (event) => {
     const intersects = raycaster.intersectObjects( bvh.objects );
 
     if (intersects.length > 0) {
-        
-        const intersectionPoint = intersects[0].point;
 
-        controls.target.copy( intersectionPoint );
-        controls.update();
+        for (let i=0; i<intersects.length; i++) {
+            if (! (intersects[i].object.qsGroup === "facade") ) {
+                const intersectionPoint = intersects[i].point;
+
+                controls.target.copy( intersectionPoint );
+                controls.update();
+                break;
+            };
+        };
+        
     };
 
 });
@@ -833,6 +664,7 @@ function requestRender() {
     ) {
         renderRequested = true;
         requestAnimationFrame( render );
+        perfMonitor.update(renderer, scene);
     };
 }
 
@@ -841,7 +673,7 @@ controls.addEventListener( 'change', requestRender);
 // window.addEventListener( 'wheel', requestRender );
 window.addEventListener( 'resize', requestRender );
 
-// let frameCount = 0;
+// // let frameCount = 0;
 renderer.render(scene, camera);
 
 function animate() {
