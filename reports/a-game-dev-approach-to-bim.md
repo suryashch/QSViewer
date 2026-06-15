@@ -1,20 +1,20 @@
 # A Game Developer's Approach to BIM
 
-> Building Information Modelling (BIM) is a construction-native technology solution that sits at the intersection of data management and 3D modelling. It abets the vast amounts of data produced on a construction site, with a 3D visual user interface. However, widespread adoption is lacking in the North American market, and I believe one of the key hurdles to integration is on the technology front, where efficient open source tools are limited or lacking.
+> Building Information Modelling (BIM) is a construction-native technology solution that sits at the intersection of data science and 3D modelling. It abets the vast amounts of data produced on a construction site, with a 3D visual user interface. However, widespread adoption is lacking in the North American market, and I believe one of the key hurdles to integration is on the 3D modelling front, where efficient open source tools are limited or lacking.
 
-Construction 3D models face unique challenges in the computer graphics space. They are large (high memory), dense (high GPU usage), and often bloated with unnecessary data (high CPU usage). These challenges compound to create a slow, buggy user experience that ultimately kills any motivation behind using it as a tool. Video games however, have been able to render vast worlds on extremely limited hardware for years. In this paper I highlight best practices, grounded in game development principles, to speed up the performance of these 3D models- all while remaining accessible to *anyone* with a web browser.
+Construction 3D models face unique challenges in the computer graphics space. They are large (high memory), dense (high GPU usage), and often bloated with unnecessary data (high CPU usage). These challenges compound to create a slow, buggy user experience that ultimately kills any motivation behind using it as a tool. In this paper I highlight best practices, grounded in game development principles, to speed up the performance of these 3D models- all while remaining accessible to *anyone* with a web browser.
 
-![QS Viewer - Cover Shot](img/cover-shot.gif)
+![QS Viewer - Cover Shot](img/cover-shot-penthouse-2-lowres.gif)
 
 This research builds on [prior work](improving-3d-model-performance-with-LOD.md), which I highly recommend you check out. As well, the primary intent of this paper is to build intuition, so code and technical wording will be limited. The [full repository](https://github.com/suryashch/LOD-control-with-threeJS), and accompanying [research body of knowledge](../research/optimizing-the-scene/batchedmesh-with-LOD.md) provide additional details to those interested.
 
 ## Background and Model
 
-In this project we shall be working with an open source library known as [three.js](https://threejs.org/). While there are better dedicated options for working with 3D models, threejs' selling point is that anyone can access your scene through a simple web browser- no downloads needed. Once created, the scene can be sent to anyone via URL and and can be opened just through a web browser.
+In this project we shall be working with an open source library known as [three.js](https://threejs.org/). While there are better dedicated options for working with 3D data, threejs' selling point is that it runs in the web browser. Once created, the scene can be sent to anyone via URL and and can be opened without needing to download any specialized software.
 
 That said, the concepts explained in the rest of this paper can be easily reproduced in your tool of choice.
 
-The model we shall be working with is of a real high-rise residential building in the Netherlands called [Sixty5](https://www.strijp-s.nl/en/building/sixty5), courtesy of the [buildingsmart-community](https://github.com/buildingsmart-community). The model consists of 59,778 objects spread across 5 layers.
+The model we shall be working with is of a real high-rise residential building in the Netherlands called [Sixty5](https://www.strijp-s.nl/en/building/sixty5), courtesy of the [buildingsmart-community](https://github.com/buildingsmart-community). The model consists of 78,359 objects spread across 6 layers.
 
 Here are some screenshots showing what the model looks like.
 
@@ -26,30 +26,31 @@ And here is a breakdown of the data.
 | ----------- | ----------- | --------------------- | ----------- |
 | Structural | 605 | 55,059 | 7.2 MB |
 | Architectural | 19,980 | 1,639,524 | 334.5 MB |
-| Mechanical (MEP) | 22,545 | 8,461,426 | 216.9 MB |
-| HVAC | 13,553 | 15,099,433 | 112.2 MB |
-| Interiors | 3,095 | 1,607,878 | 48.5 MB |
-| **Total** | **59,778** | **26,863,320** | **719.3 MB** |
+| Mechanical (MEP) | 22,544 | 8,458,171 | 216.9 MB |
+| HVAC | 11,991 | 15,096,829 | 112.2 MB |
+| Interiors | 3,099 | 1,608,938 | 48.5 MB |
+| Electrical | 20,140 | 12,132,070 | 94.8 MB |
+| **Total** | **78,359** | **38,990,591** | **814.1 MB** |
 
 The MEP and HVAC models alone account for ~23M of the total triangles. This project is a significant scale-up from previous work, and should be reflective of the vast majority of BIM projects.
 
 ## Draw Calls
 
-A 3D mesh consists of points connected by lines (known as `vertices` and `edges`). 3 `edges` combine in a loop to form a `triangle`- the smallest unit of work for a GPU. The less triangles there are on the screen, the less strain there will be on the hardware of your computer.
+A 3D mesh consists of points in space connected by lines (known as `vertices` and `edges`). 3 `edges` combine in a loop to form a `triangle`- the smallest unit of work for a GPU. The less triangles there are on the screen, the less strain there will be on the hardware of your computer.
 
 ![Vertices, Edges, Triangles and Meshes](img/vertices-edges-triangles-mesh.png)
 
-[In prior work](per-object-lod-control-with-threejs.md), we were able to establish that dynamic switching between low and high resolution meshes improves performance of a 3D scene. In that example, the piperack mesh in the scene rendered in low resolution (less triangles) initially (shown in red), and only swapped to full high definition (shown in green) when the user zoomed in past a point.
+[In prior work](per-object-lod-control-with-threejs.md), we were able to establish that dynamic switching between low and high resolution meshes improves performance of a 3D scene. In that example, the piperack mesh in the scene rendered in low resolution (less triangles) initially, and only swapped to full high definition when the user zoomed in past a point. These are shown in red and green, respectively.
 
 ![Switching Between Low and High Res versions of a Mesh](img/first-working-lod-model.gif)
 
-We determined that this technique- called Level of Detail (LOD) modelling- improved performance of the scene on average by ~3x, while keeping `draw calls` constant. However, we did not elaborate more on that statement. What is a `Draw Call`?
+Since the total number of triangles are reduced, the GPU performs better. We determined that this technique- called Level of Detail (LOD) modelling- improved performance of the scene on average by ~3x, while keeping `draw calls` constant. However, we did not elaborate more on that statement. What is a `Draw Call`?
 
-As the name suggests, a `Draw Call` is a command sent from the CPU to the GPU to 'draw' an object to the screen. It includes data about the geometry, location and materials of a mesh, for each mesh in the scene.
+As the name suggests, a `Draw Call` is a command sent from the CPU to the GPU to 'draw' an object to the screen. It includes data about the [geometry, location and materials](draw-calls-in-scenes.md) of a mesh, for each mesh in the scene.
 
 As the number of objects in the scene increase, so do the number of `draw calls` and if you aren't careful, this can significantly limit the performance capabilities of the scene well before GPU bottlenecks start emerging. In BIM models where we have lots of individual objects, this is especially an issue.
 
-Take for example, the MEP (Mechanical, Electrical, Plumbing) layer of our BIM model. If we load this raw model to our scene, we start to appreciate why `draw calls` need to be limited. We have ~22,000 individual objects in our model, each with its own `draw call`. Here is what the raw model looks like, naively loaded to our [basic scene](../research/hosting-3d-model/analysis_threejs.md).
+Take for example, the MEP (Mechanical, Electrical, Plumbing) layer of our BIM model. If we load this raw model to our scene, we start to appreciate why `draw calls` need to be limited. We have ~22,000 individual objects in our model, each with its own `draw call`. Here is what the model looks like in our [basic scene](../research/hosting-3d-model/analysis_threejs.md).
 
 ![Unedited version of Sixty5 MEP model](img/mep-baseline.gif)
 
@@ -57,20 +58,20 @@ The performance is slow and buggy. I would not want to use this for more than a 
 
 ![Baseline Results of Naive MEP and HVAC model loading](img/baseline-results-mep-hvac.png)
 
-To elaborate more on this point, we conduct the following experiment. Let's load two different layers of our BIM model to our basic scene- the `Interiors/Kitchens` model and the `Architectural` model. Measuring the performance of each, we observe some striking differences.
+To elaborate more on this point, we conduct the following experiment. Let's load two different layers of our BIM model- the `Interiors/Kitchens` model and the `Architectural` model. Measuring the performance of each, we observe some striking differences.
 
 ![Performance results of Architectural model versus Interiors/Kitchens model](img/performance-results-architectural-vs-interiors.png)
 
 | Model | Draw Calls | Triangles | FPS |
 | ----- | ---------- | --------- | --- |
-| interiors | 3,096 | ~1.6M | 107 |
-| architectural | 16,374 | ~1.6M | 13 |
+| Interiors | 3,096 | ~1.6M | 107 |
+| Architectural | 16,374 | ~1.6M | 13 |
 
-1) The number of `draw calls` in the kitchens model (3,096) is much less than the architectural model (16,374). This implies there far more individual objects in the `architectural` model than the `interiors` one.
+1) The number of `draw calls` in the kitchens model (3,096) is much less than the architectural model (16,374). This implies there far more individual objects in the architectural model than the interiors one.
 
-2) The total number of triangles in both scenes are roughly the same (~1.6M). This implies that the interior model is more finely detailed than the architectural model, since the architectural model has more objects.
+2) The total number of triangles in both models are roughly the same (~1.6M). This implies that the interior model is more finely detailed than the architectural model, since the architectural model has more objects.
 
-3) The FPS count for the interior model is ~100 FPS compared to ~13 from the`architectural- significantly lower.
+3) The FPS count for the interior model is ~100 FPS compared to ~13 from the architectural- significantly lower.
 
 > 2 models, similar number of triangles, but vastly different performance metrics. The only difference is the individual number of objects being rendered.
 
@@ -86,9 +87,9 @@ A more efficient approach is to load multiple commuters on a bus and transport t
 
 ![Draw Calls Explained - Optimized](img/draw-calls-optimized.gif)
 
-Batching our data allows for its efficient movement between the CPU and GPU.
+Batching allows for efficient data movement between the CPU and GPU.
 
-The main tool at our disposal is included in the standard `three.js` library- [BatchedMesh](https://threejs.org/docs/#BatchedMesh). Utilizing the `BatchedMesh` object requires certain preprocessing to be conducted (similar to how we need to research which bus route number is the one we need).
+The main tool at our disposal is included in the standard `three.js` library- [BatchedMesh](https://threejs.org/docs/#BatchedMesh). Utilizing the `BatchedMesh` object requires certain preprocessing to be conducted (similar to researching which bus route number is the one we need).
 
 > Note: This preprocessing step will be explained many times in later sections. This is intentionally done to drive home it's importance.
 
@@ -105,44 +106,46 @@ We acquire this information by iterating through every mesh in our scene, and sa
 
 Once complete, our dictionary should look like this.
 
-```yml
-material_1
-    -> mesh_id_1
-        -> geometry_data : [ vertices, faces ]
-        -> matrix_data : [ transformation_matrix ]
-    -> mesh_id_2
-        -> geometry_data : [ vertices, faces ]
-        -> matrix_data : [ transformation_matrix ]
-
-    ...
-
-    -> mesh_id_N
-        -> geometry_data : [ vertices, faces ]
-        -> matrix_data : [ transformation_matrix ]
-
-
-material_2
-    -> mesh_id_1
-        -> geometry_data : [ vertices, faces ]
-        -> matrix_data : [ transformation_matrix ]
-
-    ...
-
-    -> mesh_id_N
-        -> geometry_data : [ vertices, faces ]
-        -> matrix_data : [ transformation_matrix ]
-
-...
-material_N
-    ...
-    -> mesh_id_N
-        -> geometry_data : [ vertices, faces ]
-        -> matrix_data : [ transformation_matrix ]
+```
+root
+├── material_1
+│   ├── mesh_id_1
+│   │    └── geometry_data : [ vertices, faces ]
+│   │    └── matrix_data : [ transformation_matrix ]
+│   │   
+│   ├── mesh_id_2
+│   │    └── geometry_data : [ vertices, faces ]
+│   │    └── matrix_data : [ transformation_matrix ]
+│   │
+│   │        ...
+│   │
+│   └── mesh_id_N
+│        └── geometry_data : [ vertices, faces ]
+│        └── matrix_data : [ transformation_matrix ]
+│
+│
+├── material_2
+│   ├── mesh_id_1
+│   │    └── geometry_data : [ vertices, faces ]
+│   │    └── matrix_data : [ transformation_matrix ]
+│   │
+│   │        ...
+│   │
+│   └── mesh_id_N
+│        └── geometry_data : [ vertices, faces ]
+│        └── matrix_data : [ transformation_matrix ]
+│
+│    ...
+└── material_N
+    │    ...
+    └── mesh_id_N
+        └── geometry_data : [ vertices, faces ]
+        └── matrix_data : [ transformation_matrix ]
 ```
 
 You can find more in-depth explanations on the creation of this dictionary and subsequent `BatchedMesh` objects [in the accompanying research document](../research/optimizing-the-scene/batched-mesh.md).
 
-Now, loading the same `Architectural` model as above with `BatchedMesh` optimizations, this is what we observe.
+Now, loading the same architectural model as above with `BatchedMesh` optimizations, this is what we observe.
 
 ![Architectural Model Loaded to the Scene with BatchedMesh](../research/optimizing-the-scene/img/performance-results-architectural-optimized-noglass.png)
 
@@ -150,7 +153,7 @@ Just by batching our scene, our FPS count has jumped up to ~70 FPS. All other me
 
 ## Instancing
 
-Another powerful technique to improve the `draw calls` in the scene is known as [`Instancing`](../research/optimizing-the-scene/instanced-mesh.md). This process works best when you have multiple objects in a scene that all share the same geometry. Think leaves on a tree, bolts in a steel beam, 90 degree elbows on a pipe- all these objects are essentially the same, just loaded to different positions.
+Another powerful technique to improve the `draw calls` in the scene is known as [`Instancing`](../research/optimizing-the-scene/instanced-mesh.md). This process works best when you have multiple objects in a scene that all share the same geometry. Think leaves on a tree, bolts in a steel beam, 90 degree elbows on a pipe- all are essentially the same object, just loaded to different positions.
 
 ![Instancing Example. Credit: three.js](img/instancing-threejs-example.gif)
 
@@ -160,55 +163,57 @@ Since these items all share the exact same geometry, we can send one `draw call`
 
 As a happy side effect, this also improves the memory usage of the scene since we only need to save one object's geometry data, but can reference it many times.
 
-The main `three.js` library once again provides us with tools to address instancing; aptly named [InstancedMesh](https://threejs.org/docs/#InstancedMesh). This object requires the following data ->
+The default `three.js` library once again provides us with tools to address instancing; aptly named [InstancedMesh](https://threejs.org/docs/#InstancedMesh). This object requires the following data:
 
 - The mesh geometry,
 - The mesh material,
 - The number of instances.
 
-As described in the section on [`BatchedMesh`](#batching-the-scene), this information can be acquired by looping through the objects in our scene. We slightly tweak our dictionary object from earlier as follows.
+As described in the [section on BatchedMesh](#batching-the-scene), this information can be acquired by iterating through the objects in our scene. We slightly tweak our dictionary object from earlier as follows.
 
 - If we encounter an object in the scene whose geometry is exactly the same as another, we do not create a new `mesh_id`. We utilize the existing entry.
 - For these instanced geometries, we add the location data of the mesh to `matrices_data`, which is now a list instead of a single entry. As a result, we will have multiple `tranformation_matrices` for a unique piece of geometry.
 
 Here is what our tweaked dictionary looks like.
 
-```yml
-material_1
-    -> mesh_id_1
-        -> geometry_data : [ vertices, faces ]
-        -> matrices_data : [ transformation_matrix_1, transformation_matrix_2, ... ]
-    -> mesh_id_2
-        -> geometry_data : [ vertices, faces ]
-        -> matrices_data : [ transformation_matrix_1, transformation_matrix_2, ... ]
-
-    ...
-
-    -> mesh_id_N
-        -> geometry_data : [ vertices, faces ]
-        -> matrices_data : [ transformation_matrix_1, transformation_matrix_2, ... ]
-
-
-material_2
-    -> mesh_id_1
-        -> geometry_data : [ vertices, faces ]
-        -> matrices_data : [ transformation_matrix_1, transformation_matrix_2, ... ]
-
-    ...
-
-    -> mesh_id_N
-        -> geometry_data : [ vertices, faces ]
-        -> matrices_data : [ transformation_matrix_1, transformation_matrix_2, ... ]
-
-...
-material_N
-    ...
-    -> mesh_id_N
-        -> geometry_data : [ vertices, faces ]
-        -> matrices_data : [ transformation_matrix_1, transformation_matrix_2, ... ]
+```
+root
+├── material_1
+│   ├── mesh_id_1
+│   │    └── geometry_data : [ vertices, faces ]
+│   │    └── matrices_data : [ transformation_matrix_1, transformation_matrix_2, ... ]
+│   │   
+│   ├── mesh_id_2
+│   │    └── geometry_data : [ vertices, faces ]
+│   │    └── matrices_data : [ transformation_matrix, transformation_matrix_2, ... ]
+│   │
+│   │        ...
+│   │
+│   └── mesh_id_N
+│        └── geometry_data : [ vertices, faces ]
+│        └── matrices_data : [ transformation_matrix, transformation_matrix_2, ... ]
+│
+│
+├── material_2
+│   ├── mesh_id_1
+│   │    └── geometry_data : [ vertices, faces ]
+│   │    └── matrices_data : [ transformation_matrix, transformation_matrix_2, ... ]
+│   │
+│   │        ...
+│   │
+│   └── mesh_id_N
+│        └── geometry_data : [ vertices, faces ]
+│        └── matrices_data : [ transformation_matrix, transformation_matrix_2, ... ]
+│
+│    ...
+└── material_N
+    │    ...
+    └── mesh_id_N
+        └── geometry_data : [ vertices, faces ]
+        └── matrices_data : [ transformation_matrix, transformation_matrix_2, ... ]
 ```
 
-And what do the results look like?
+And what do the results look like? Here, we use the MEP model for testing.
 
 ![InstancedMesh versus Baseline](img/instancedmesh-versus-baseline.png)
 
@@ -218,7 +223,7 @@ To truly optimize our scene, we need to combine the benefits of `instancing` as 
 
 ![Instancing Within BatchedMesh Results](img/instancedmesh-versus-batchedmesh-versus-baseline.png)
 
-Now that's what I'm talking about. A total of 39 draw calls (one for each material), and a blazing fast performance figure (~120 FPS). This is even better than the [simple batching](../research/optimizing-the-scene/batched-mesh.md) approach from earlier (~70 FPS). As briefly mentioned above, we also notice a drastic reduction in the total memory consumption of the scene.
+From the results, we observe a total of 39 draw calls (one for each material), and a blazing fast performance figure (~120 FPS)- even better than the [simple batching](../research/optimizing-the-scene/batched-mesh.md) approach from earlier (~70 FPS). As briefly mentioned above, we also notice a drastic reduction in the total memory consumption of the scene.
 
 These results alone would be enough for computers to comfortably render, but we will take this one step further by adding [LOD control](../research/hosting-3d-model/basic-lod-control-with-threejs.md) to the mix.
 
@@ -230,7 +235,7 @@ Now that we have addressed the `draw calls` issue, the focus shifts back to the 
 
 However, applying this concept to our `BatchedMesh` object requires some additional thinking. For starters, we no longer have individual objects in our scene- we have `instances`. As well, all the mesh data is stored within an existing data structure- the `batchedMesh`, hence our previously implemented [three.LOD()](https://threejs.org/docs/#LOD) class of objects wont work.
 
-Instead, we need to manually populate our `batchedMesh` object with the different LOD's. For each unique goemetry in the scene, we now also need to save our mesh's low-resolution geometry. Hence, we tweak our dictionary object yet once again, according to the following rules.
+Instead, we need to manually populate our `batchedMesh` object with the different LOD's. For each unique goemetry in the scene, we now also need to save our mesh's low-resolution geometry. Hence, we tweak our dictionary yet once again, according to the following rules.
 
 - We populate our dictionary as normal using the data from our HI-RES model.
 - Now, we iterate over all objects in the LOW-RES model.
@@ -239,74 +244,84 @@ Instead, we need to manually populate our `batchedMesh` object with the differen
 
 Now, our final dictionary looks like this.
 
-```yml
-material_1
-    -> mesh_id_1
-        -> geometry_data 
-            -> hi_res_mesh : [ vertices, faces ]
-            -> lo_res_mesh : [ vertices, faces ]
-        -> matrices_data : [ transformation_matrix_1, transformation_matrix_2, ... ]
-    -> mesh_id_2
-        -> geometry_data 
-            -> hi_res_mesh : [ vertices, faces ]
-            -> lo_res_mesh : [ vertices, faces ]
-        -> matrices_data : [ transformation_matrix_1, transformation_matrix_2, ... ]
-
-    ...
-
-    -> mesh_id_N
-        -> geometry_data 
-            -> hi_res_mesh : [ vertices, faces ]
-            -> lo_res_mesh : [ vertices, faces ]
-        -> matrices_data : [ transformation_matrix_1, transformation_matrix_2, ... ]
-
-
-material_2
-    -> mesh_id_1
-        -> geometry_data 
-            -> hi_res_mesh : [ vertices, faces ]
-            -> lo_res_mesh : [ vertices, faces ]
-        -> matrices_data : [ transformation_matrix_1, transformation_matrix_2, ... ]
-
-    ...
-
-    -> mesh_id_N
-        -> geometry_data 
-            -> hi_res_mesh : [ vertices, faces ]
-            -> lo_res_mesh : [ vertices, faces ]
-        -> matrices_data : [ transformation_matrix_1, transformation_matrix_2, ... ]
-
-...
-material_N
-    ...
-    -> mesh_id_N
-        -> geometry_data 
-            -> hi_res_mesh : [ vertices, faces ]
-            -> lo_res_mesh : [ vertices, faces ]
-        -> matrices_data : [ transformation_matrix_1, transformation_matrix_2, ... ]
+```
+root
+├── material_1
+│   ├── mesh_id_1
+│   │   ├── geometry_data
+│   │   │   └── hi_res_mesh : [ vertices, faces ]
+│   │   │   └── lo_res_mesh : [ vertices, faces ]
+│   │   │
+│   │   └── matrices_data : [ transformation_matrix_1, transformation_matrix_2, ... ]
+│   │   
+│   ├── mesh_id_2
+│   │   ├── geometry_data
+│   │   │   └── hi_res_mesh : [ vertices, faces ]
+│   │   │   └── lo_res_mesh : [ vertices, faces ]
+│   │   │
+│   │   └── matrices_data : [ transformation_matrix, transformation_matrix_2, ... ]
+│   │
+│   │        ...
+│   │
+│   └── mesh_id_N
+│       ├── geometry_data
+│       │   └── hi_res_mesh : [ vertices, faces ]
+│       │   └── lo_res_mesh : [ vertices, faces ]
+│       │
+│       └── matrices_data : [ transformation_matrix, transformation_matrix_2, ... ]
+│
+│
+├── material_2
+│   ├── mesh_id_1
+│   │   ├── geometry_data
+│   │   │   └── hi_res_mesh : [ vertices, faces ]
+│   │   │   └── lo_res_mesh : [ vertices, faces ]
+│   │   │
+│   │   └── matrices_data : [ transformation_matrix, transformation_matrix_2, ... ]
+│   │
+│   │        ...
+│   │
+│   └── mesh_id_N
+│       ├── geometry_data
+│       │   └── hi_res_mesh : [ vertices, faces ]
+│       │   └── lo_res_mesh : [ vertices, faces ]
+│       │
+│       └── matrices_data : [ transformation_matrix, transformation_matrix_2, ... ]
+│
+│    ...
+└── material_N
+    │    ...
+    └── mesh_id_N
+        ├── geometry_data
+        │   └── hi_res_mesh : [ vertices, faces ]
+        │   └── lo_res_mesh : [ vertices, faces ]
+        │
+        └── matrices_data : [ transformation_matrix, transformation_matrix_2, ... ]
 ```
 
 Here is a graphic to help understand how the dictionary is populated.
 
+![Dictionary population graphic](img/game-dev-bim-visuals_dictionary_population.gif)
 
+Now, we just need to write some logical code that tests the distance between our camera and the objects in the scene. If the distance is less than a certain threshold, swap the mesh to hi-res; else keep it at low-res. And voila! We have a working LOD system.
 
-Now, we just need to write some logical code that tests the distance between our camera and the objects in the scene. If the distance is less than a certain threshold, swap the mesh to hi-res; else keep it at low-res. And voila! We have a working LOD system. Here are the performance metrics.
+![BatchedMesh with LOD](img/batchedmesh-with-lod.gif)
 
+Here are the performance metrics.
 
+![BatchedMesh with LOD Results](img/mep-batchedmesh-basiclod-results.png)
 
-Some interesting observations. The number of triangles in the scene is down- roughly 10% of the original 8M. Draw calls are constant, ([consistent with our previous research](improving-3d-model-performance-with-LOD.md)).
+Some interesting observations. The number of triangles in the scene is down- roughly 30% of the original 8M. Draw calls are constant, ([consistent with our previous research](improving-3d-model-performance-with-LOD.md)).
 
-However, the FPS figure is still on the lower side. Running some diagnostic tests, we see that the CPU is still dominating the resources of the scene. Digging a little further, we see that our LOD system is conducting distance checks between our camera and every object in the scene, every frame. Since we have a large number of objects, this is ultimately whats causing the slowdown.
-
-
+However, the FPS figure is still on the lower side. Running some diagnostic tests, we see that the CPU is still dominating the resources of the scene. Digging a little further, it seems that our LOD system is conducting distance checks between our camera and every object in the scene, every frame. Since we have a large number of objects, this is ultimately whats causing the slowdown.
 
 We want to find the closest objects to our camera, while limiting the number of distance checks being conducted. That's where `Spatial Querying` comes into play.
 
 ## Spatial Querying
 
-[Spatial querying requires its own document to fully appreciate](https://github.com/suryashch/octree/blob/main/reports/octree.md). Here, we condense down to the basics. How do you efficiently test multiple objects' distance against a point? As described in the section above, we could naively calculate the distance between every point and our camera; check to see if its within a specified radius, and return TRUE or FALSE. For small scenes, this is perfectly fine and internally, is how the [Three.LOD()](https://threejs.org/docs/#LOD) system works.
+[Spatial querying requires its own document to fully appreciate](https://github.com/suryashch/octree/blob/main/reports/octree.md). Here, we condense down to the basics. How do you efficiently test multiple objects' distance against a point? As described in the section above, we could naively calculate the distance between every point and our camera; check to see if its within a specified radius, and return `TRUE` or `FALSE`. For small scenes, this is perfectly fine and internally, is how the [Three.LOD()](https://threejs.org/docs/#LOD) system works.
 
-
+![Traditional LOD Search Systems](img/typical-distance-search.gif)
 
 However, in our case we have 10's of thousands of objects, AND we're conducting this distance check every single frame. An immense slowdown, and its reflected in our observed low FPS results.
 
@@ -330,21 +345,21 @@ Just through 16 calculations, we were already able to narrow down the number of 
 
 *placeholder table*
 
-In this project, I'm working with a special flavour of `octree` called a `Bounding Volume Hierarchy` (BVH). This data structure works the same way as an `octree` except, the cubes are drawn as bounding boxes around the objects. It is best suited for scenes where objects are condensed in a small space. The [Wikipedia article](https://en.wikipedia.org/wiki/Bounding_volume_hierarchy) on BVH's is actually a great resource for understanding its workings.
+In this project, I'm working with a special flavour of `octree` called a Bounding Volume Hierarchy (`BVH`). This data structure works the same way as an `octree` except, the cubes are drawn as bounding boxes around the objects. It is best suited for scenes where objects are condensed in a small space. The [Wikipedia article](https://en.wikipedia.org/wiki/Bounding_volume_hierarchy) on BVH's is actually a great resource for understanding its workings.
 
 The tools we need to make this work for our scene are saved in an add-on library to three.js, called [three-mesh-bvh](https://github.com/gkjohnson/three-mesh-bvh), by gkjohnson.
 
 Once this search system is implemented into our scene, we are presented with these results.
 
-
+![BatchedMesh with BVH results](img/mep_hvac-batchedmesh-with-bvh-results.png)
 
 A definite improvement over previous results, and a promising step forward. However, the FPS figure is still lower than I'd like- and now as a last step, we work on optimizing the frame loop.
 
-## Frame Updates
+## Frame Loop Updates
 
-A 3D scene is essentially a group of functions that update the pixels on the screen based on user input, known as a `Frame Loop`. Depending on your screen's refresh rate, the `frame loop` can run 60 times per second (60 FPS), or anywhere upto 240 FPS like in high-end gaming machines. Usually, we wouldn't think about this too much, and adequate results can be achieved even with every function running every frame.
+A 3D scene is essentially a group of functions that update the pixels on the screen, known as a `Frame Loop`. Depending on your screen's refresh rate, the `frame loop` can run 60 times per second (60 FPS), or anywhere upto 240 FPS like in high-end gaming machines. Usually, we wouldn't think about this too much, and adequate results can be achieved even with every function running every frame.
 
-However, if we take a look at the different tasks in our `frame loop`, we can start to see why our performance figure is low.
+However, if we take a look at the different tasks running in our `frame loop`, we can start to see why our performance figure is low.
 
 Every frame, our CPU is -
 
@@ -361,7 +376,7 @@ Quite a lot of work being done every frame- and really, it doesn't need to be.
 
 The rest of the time, our scene can sit idle- consuming minimal resources.
 
-Hence, we optimize the frame loop, by adding [`eventListeners`](https://www.geeksforgeeks.org/javascript/javascript-addeventlistener-with-examples/). These webpage elements listen for user input such as mouse movement, clicks, scrolls, and can be set up to run a function on trigger.
+Hence, we optimize the frame loop, by adding [eventListeners](https://www.geeksforgeeks.org/javascript/javascript-addeventlistener-with-examples/). These webpage elements listen for user input such as mouse movement, clicks, scrolls, and can be set up to run a function on trigger.
 
 - We set up an `eventListener` for mouse scrolling, and trigger it to run our LOD checking function.
 
@@ -373,23 +388,23 @@ We will still have these set of functions in the main `frame loop`, but we can s
 
 Now, here is what the final scene looks like.
 
-
+![BatchedMesh with BVH accelerated LOD system + Frame Updates](img/mep_hvac-batchedmesh-with-bvh.gif)
 
 Beautiful results. The page runs at 60 FPS, especially when idle. On movement, we see a slight drop down to 40 FPS (still high, but definitely lower). This drop in FPS quickly returns back to normal once the user zooms in, or stops mmoving.
 
 Zooming in to an area causes an instant switch of object's LOD based on the search radius. Taking your hand off the mouse results in minimal resource utilization, and the scene will run with almost no overhead (as verified in the Task Manager).
 
+![Final Performance Metrics - BatchedMesh + BVH + Frameloop](img/mep_hvac-batchedmesh-with-bvh-frameloop-results.png)
 
+Adding additional model layers to the scene results in higher initial load time, but our engine is perfectly capable of rendering these additional objects. The final scene with every layer active looks like this.
 
-Adding additional model layers to the scene results in higher initial load time, but our engine is perfectly capable of rendering these additional objects. The final performance metrics with every layer active in the scene looks like this.
-
-
+![Final Scene with all Model Layers](img/final-model-all-layers-lowres.gif)
 
 ## A Note on Memory
 
 At this point, the results from our effort seem too good to be true. The CPU and GPU's work has been thoroughly optimized and our scene is running at a crisp 60 FPS. But as with real life, there is no such thing as a free lunch.
 
-Taking a look at the memory consumption of the webpage, the numbers are large, and this is because our LOD system is effectively "doubling" the number of objects in our scene. For each object, we save a low-res and hi-res mesh to memory, and while these are never active at the same time- they both need to be stored to RAM for quick access.
+Taking a look at the memory consumption of the webpage, the numbers are large, and this is because our LOD system is effectively "doubling" the number of objects in our scene. For each object, we save a low-res and hi-res mesh to memory, and while these are never active at the same time- they both need to be stored in memory for quick access.
 
 Improvements can be made through instancing ([as seen in the above section](#instancing)), but the scene can only be instanced up to a limit. This is a known trade-off, and one which I will address at a later time.
 
@@ -407,27 +422,45 @@ At this point our bottleneck shifted from the CPU to the GPU- all these objects 
 
 Lastly, this mesh-swapping function added additional CPU overhead; eating up the resources of each frame in our scene. We addressed this by implementing a smart `Octree` based search system to our function, narrowing down its scope. We also triggered it to only run when our user moves around the scene, remaining idle the rest of the time.
 
-
-
-The final implementation runs on average at 40-60 FPS, and improves drastically when zoomed in.
+![Final Scene](img/cover-shot-2.gif)
 
 ## Results
 
-Comparison of the full model's performance to a baseline proved to be a tough task- I could not even move one frame when I naively loaded all my data to the scene. However, we were able to isolate results when strictly looking at the strictly the MEP layer of our model.
+Comparison of the full model's performance to a baseline proved to be a tough task- I could not even move one frame when I naively loaded all my data to the scene. However, we're able to isolate results when strictly looking at a layer-by-layer basis.
 
+Here is a comparison of the MEP layer, loaded naively versus with our optimizations. Our optimized viewer is rendering this scene comfortably at ~85 FPS, while the naive approach is getting burdened by the number of draw calls, and rendering at ~10 FPS.
 
+![Performance Comparison- MEP versus baseline](img/performance-results-mep-50ft.png)
+
+Zooming into the model improves performance across the board, due to there being less objects on the screen. When loading the HVAC model, we still see a stark difference between our naive approach and optimized viewer. This is due to the LOD system rendering the far away objects in low resolution.
+
+![Performance Comparison- HVAC zoomed in versus baseline](img/performance-results-hvac-zoomed-in.png)
+
+As mentioned above, our scene throttles down when there is no change. Hence, loading all our model layers and taking our hand off the mouse yields these results.
+
+![Performance results - optimized scene at idle](img/performance-results-fullscene-zoomedin-idle.png)
+
+Even with movement, our full scene runs comfortably at ~100 FPS which is well above our target of 60 FPS.
+
+![Performance results - optimized scene with movement](img/performance-results-fullscene-50ft.png)
+
+A quick note, that the performance figures may be slightly different depending on hardware. The results listed above are a representative of modest Windows-based machines.
+
+Out of curiousity, I tried the above experiments with an NVIDIA graphics card and ended up breaking the scale. This was the peak FPS measurement.
+
+![Performance results - optimized scene with NVIDIA graphics card](img/performance-results-fullscene-nvidia.gif)
+
+Mind boggling results.
 
 An important finding here is that the scene's performance scales extremely well with an increase in model size. With instancing, batching and LOD control, we can effectively "cap" the total number of draw calls and triangles needing to be rendered to the screen. As well, the distance testing algorithm sclaes in log time, i.e. as the data scales by a factor of N, the time taken to run our algorithm only increases by a factor of log(N).
 
-## Conclusion and Next Steps
+## Conclusion
 
-Building Information Modelling (BIM) combines the best practices of data science with a rich visual overlay. Over the past few years, the tools for managing the data aspect have improved to the point that they can be implemented by most with relative ease. However, the tools for viewing this data have remained mostly the same: closed door and inaccessible to most.
+Building Information Modelling (BIM) combines the best practices of data science with a rich visual overlay. Over the past few years, the tools for managing the data aspect have improved to the point where they can be implemented by most with relative ease. However, the tools for viewing this data have remained mostly the same: closed door and inaccessible.
 
-Through this endeavour, we established that large 3D models can be efficiently hosted and viewed on a webpage. We explored techniques used by video game developers such as `Batching`, `Instancing`, `LOD Control`, and `Spatial Querying` to improve the performance of the final scene- containing 5 layers, 60k individual objects, and a whopping 25M triangles. Despite these massive numbers, the scene runs at a comfortable ~40 FPS (60 when zoomed in). When idle, the scene throttles down- vastly reducing the CPU and GPU resource utilization (you may even notice your computer's fan shut off!).
+Through this endeavour, we established that large 3D models can be efficiently hosted and viewed on a webpage. We explored techniques used by video game developers such as `Batching`, `Instancing`, `LOD Control`, and `Spatial Querying` to improve the performance of the final scene- containing 6 layers, 78k individual objects, and a whopping 38M triangles. Despite these massive numbers, the scene runs at a comfortable ~60FPS. When idle, the scene throttles down- vastly reducing the CPU and GPU resource utilization (you may even notice your computer's fan shut off!).
 
-A quick note, that the performance figures seen in my implementation will be slightly different depending on the hardware you have available. The results listed here are representative of modest hardware specs.
-
-In further research, I explore adding interactivity- controlling the objects rendered to the screen based on data filters, enabling data input and collection, and improving data visualization capabilities through color gradients. As well, I explore memory management, tailoring the experience for machines with lower available RAM.
+In further research, I explore adding reactivity- controlling the objects rendered to the screen based on data filters, enabling data input and collection, and improving data visualization capabilities through color gradients. As well, I explore memory management, tailoring the experience for machines with lower available RAM.
 
 You can find more information about this research on my [github](https://github.com/suryashch/3d_modelling).
 
@@ -467,6 +500,6 @@ You can find more information about this research on my [github](https://github.
 
 [Three.LOD()](https://threejs.org/docs/#LOD)
 
-[`eventListeners`](https://www.geeksforgeeks.org/javascript/javascript-addeventlistener-with-examples/)
+[eventListeners](https://www.geeksforgeeks.org/javascript/javascript-addeventlistener-with-examples/)
 
 [Wikipedia article](https://en.wikipedia.org/wiki/Bounding_volume_hierarchy)
