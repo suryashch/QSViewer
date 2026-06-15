@@ -51,7 +51,7 @@ footer {
 
 /* Example of a basic CSS rule syntax: */
 p {
-    font-size: 0.25rem; /* property: value; */
+    font-size: 0.75rem; /* property: value; */
 }
 
 .ui-panel {
@@ -95,7 +95,7 @@ h2.text-pane {
 }
 
 .lil-gui {
-    --font-family: "Roboto Mono", monospace;
+    /* --font-family: "Roboto Mono", monospace; */
     --font-size: 13px;
     --widget-height: 20px;
 }
@@ -146,7 +146,7 @@ h1 {
     background: rgba(38, 40, 55, 0.85);
     backdrop-filter: blur(10px);
     color: #ffffff;
-    font-size: 50px;
+    font-size: 1rem;
     font-weight: 600;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.4);
@@ -159,7 +159,7 @@ h3 {
     margin-top: 0;
     margin-bottom: 15px;
     color: #ffffff;
-    font-size: 18px;
+    font-size: 3rem;
     border-bottom: 2px solid #3FDCFB;
     padding-bottom: 8px;
 }
