@@ -2,7 +2,7 @@
 
 A novel way to view BIM models.
 
-![Cover Shot](reports/img/cover-shot-penthouse-2-lowres.gif)
+![Cover Shot](reports/img/cover-shot-penthouse-2-lowres-short.gif)
 
 Construction 3D models face unique challenges on the technology front.
 
@@ -24,17 +24,17 @@ Context Shifts as you do.
 
 Adjust the Query Radius, as needed.
 
-![Adjust Query Radius](reports/img/qsviewer-query-radius.gif)
+![Adjust Query Radius](reports/img/qsviewer-query-radius-2-lowres.gif)
 
 Double Click to center on an object.
 
-![Double Click to Center](reports/img/qsviewer-doubleclick-lowres.gif)
+![Double Click to Center](reports/img/qsviewer-doubleclick-lowres-2.gif)
 
 Dark mode, on demand.
 
-![Dark Mode](reports/img/qsviewer-darkmode.gif)
+![Dark Mode](reports/img/qsviewer-darkmode-lowres-short.gif)
 
-Works on Mobile (recorded on iPhone 11, iOS 18).
+Works on Mobile.
 
 ![QSViewer - Mobile View](reports/img/qsviewer-mobile.gif)
 
@@ -44,7 +44,7 @@ Works on Mobile (recorded on iPhone 11, iOS 18).
 
 The engine works by determining the closest objects to the camera, using a spatial search tree. These objects represent a small subset of the total, and change as the user moves around. The rest of the time, the engine loads the lightweight facade and nothing else.
 
-![QSViewer Zoomed Shot](reports/img/cover-shot-2.gif)
+![QSViewer Zoomed Shot](reports/img/cover-shot-2-lowres.gif)
 
 Additional details are available in the accompanying report, [A Game Developer's Approach to BIM](reports/a-game-dev-approach-to-bim.md)
 
