@@ -64,10 +64,10 @@ To elaborate more on this point, we conduct the following experiment. Let's load
 
 ![Performance results of Architectural model versus Interiors/Kitchens model](img/performance-results-architectural-vs-interiors.png)
 
-| Model | Draw Calls | Triangles | FPS |
-| ----- | ---------- | --------- | --- |
-| Interiors- Baseline | 3,096 | ~1.6M | 107 |
-| Architectural- Baseline | 16,374 | ~1.6M | 13 |
+| Model | FPS | Draw Calls | Triangles |
+| ----- | --- | ---------- | --------- |
+| Interiors- Baseline | 107 | 3,096 | ~1.6M |
+| Architectural- Baseline | 13| 16,374 | ~1.6M |
 
 1) The number of `draw calls` in the kitchens model (3,096) is much less than the architectural model (16,374). This implies there far more individual objects in the architectural model than the interiors one.
 
@@ -151,6 +151,7 @@ Now, loading the same architectural model as above with `BatchedMesh` optimizati
 
 | Model | FPS | Draw Calls | Triangles |
 | ----- | --- | ---------- | --------- |
+| Architectural- Baseline | 13| 16,374 | ~1.6M |
 | Architectural- Batched | 73 | 38 | 1,639,525 |
 
 Just by batching our scene, our FPS count has jumped up to ~70 FPS. All other metrics stayed the same- 1.6M triangles, 16k objects. From the table we observe 38 `draw calls` in our optimized scene. This implies that our scene contains 37 unique materials (one draw call is reserved for the 2D grid).
@@ -322,6 +323,7 @@ Here are the performance metrics.
 
 | Model | FPS | Draw Calls | Triangles |
 | ----- | --- | ---------- | --------- |
+| MEP- Baseline | 15 | 23,228 | 8,456,959 |
 | MEP- LOD Controlled | 16 | 39 | 5,704,625 |
 
 Some interesting observations. The number of triangles in the scene is down- 60% of the original 8M. Draw calls are constant, ([consistent with our previous research](improving-3d-model-performance-with-LOD.md)).
@@ -366,6 +368,7 @@ Once this search system is implemented into our scene, we are presented with the
 
 | Model | FPS | Draw Calls | Triangles |
 | ----- | --- | ---------- | --------- |
+| MEP + HVAC- Baseline | 10 | 34,535 | 23,555,000 |
 | MEP + HVAC- BVH Accelerated Querying | 29 | 2 | 2,309,814 |
 
 A definite improvement over previous results, and a promising step forward. However, the FPS figure is still lower than I'd like- and now as a last step, we work on optimizing the frame loop.
@@ -411,6 +414,7 @@ Zooming in to an area causes an instant switch of object's LOD based on the sear
 
 | Model | FPS | Draw Calls | Triangles |
 | ----- | --- | ---------- | --------- |
+| MEP + HVAC- Baseline | 10 | 34,535 | 23,555,000 |
 | MEP + HVAC- Frameloop Optimizations | 63 | 2 | 2,309,814 |
 
 Adding additional model layers to the scene results in higher initial load time, but our engine is perfectly capable of rendering these additional objects. The final scene with every layer active looks like this.
@@ -455,17 +459,17 @@ Zooming into the model improves performance across the board, due to there being
 
 As mentioned above, our scene throttles down when there is no change. Hence, loading all our model layers and taking our hand off the mouse yields these results.
 
-![Performance results - optimized scene at idle](img/performance-results-fullscene-zoomedin-idle.png)
+![Performance results - Full optimized scene at idle](img/performance-results-fullscene-zoomedin-idle.png)
 
 Even with movement, our full scene runs comfortably at ~100 FPS which is well above our target of 60 FPS.
 
-![Performance results - optimized scene with movement](img/performance-results-fullscene-50ft.png)
+![Performance results - Full optimized scene with movement](img/performance-results-fullscene-50ft.png)
 
 A quick note, that the performance figures may be slightly different depending on hardware. The results listed above are a representative of modest Windows-based machines.
 
 Out of curiousity, I tried the above experiments with an NVIDIA graphics card and ended up breaking the scale. This was the peak FPS measurement.
 
-![Performance results - optimized scene with NVIDIA graphics card](img/performance-results-fullscene-nvidia.gif)
+![Performance results - Full optimized scene with NVIDIA graphics card](img/performance-results-fullscene-nvidia.gif)
 
 Mind boggling results.
 
