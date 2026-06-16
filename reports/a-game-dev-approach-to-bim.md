@@ -75,7 +75,7 @@ To elaborate more on this point, we conduct the following experiment. Let's load
 
 3) The FPS count for the interior model is ~100 FPS compared to ~13 from the architectural- significantly lower.
 
-> 2 models, similar number of triangles, but vastly different performance metrics. The only difference is the individual number of objects being rendered.
+*2 models, similar number of triangles, but vastly different performance metrics. The only difference is the individual number of objects being rendered.*
 
 We conclude from this simple experiment that no matter how capable our GPU is, oftentimes it is CPU bottlenecks that slow us down. We address these bottlenecks through a combination of 2 techniques- `batching` and `instancing`.
 
@@ -465,7 +465,7 @@ Even with movement, our full scene runs comfortably at ~100 FPS which is well ab
 
 ![Performance results - Full optimized scene with movement](img/performance-results-fullscene-50ft.png)
 
-A quick note, that the performance figures may be slightly different depending on hardware. The results listed above are a representative of modest Windows-based machines.
+> A quick note, that the performance figures may be slightly different depending on hardware. The results listed above are a representative of modest Windows-based machines.
 
 Out of curiousity, I tried the above experiments with an NVIDIA graphics card and ended up breaking the scale. This was the peak FPS measurement.
 
