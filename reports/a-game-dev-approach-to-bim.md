@@ -56,7 +56,9 @@ Take for example, the MEP (Mechanical, Electrical, Plumbing) layer of our BIM mo
 
 The performance is slow and buggy. I would not want to use this for more than a few minutes at a time. We notice abysmally slow `FPS` (Frames Per Second) as well- ~10 FPS. 60 FPS is considered the gold standard for 3D rendering. Things are even worse if we also try to load the HVAC model.
 
-![Baseline Results of Naive MEP and HVAC model loading](img/baseline-results-mep-hvac.png)
+| Model | FPS | Draw Calls | Triangles |
+| ----- | --- | ---------- | --------- |
+| MEP + HVAC | 10 | 34,535 | 23,555,000 |
 
 To elaborate more on this point, we conduct the following experiment. Let's load two different layers of our BIM model- the `Interiors/Kitchens` model and the `Architectural` model. Measuring the performance of each, we observe some striking differences.
 
@@ -147,9 +149,11 @@ You can find more in-depth explanations on the creation of this dictionary and s
 
 Now, loading the same architectural model as above with `BatchedMesh` optimizations, this is what we observe.
 
-![Architectural Model Loaded to the Scene with BatchedMesh](img/performance-results-architectural-optimized-noglass.png)
+| Model | FPS | Draw Calls | Triangles |
+| ----- | --- | ---------- | --------- |
+| Architectural | 73 | 38 | 1,639,525 |
 
-Just by batching our scene, our FPS count has jumped up to ~70 FPS. All other metrics stayed the same- 1.6M triangles, 16k objects. From the image we observe 38 `draw calls` in our optimized scene. This implies that our scene contains 37 unique materials (one draw call is reserved for the 2D grid).
+Just by batching our scene, our FPS count has jumped up to ~70 FPS. All other metrics stayed the same- 1.6M triangles, 16k objects. From the table we observe 38 `draw calls` in our optimized scene. This implies that our scene contains 37 unique materials (one draw call is reserved for the 2D grid).
 
 ## Instancing
 
@@ -219,7 +223,11 @@ We see a definite improvement over the baseline however, we're not out of the wo
 
 To truly optimize our scene, we need to combine the benefits of `instancing` as well as `batching`, and is explained more in the [instanced-mesh research write-up](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/instanced-mesh.md). Once we instance AND batch our scene, these are the performance results we see.
 
-![Instancing Within BatchedMesh Results](img/instancedmesh-versus-batchedmesh-versus-baseline.png)
+| Model | FPS | Draw Calls | Triangles | Memory |
+| ----- | --- | ---------- | --------- | ------ |
+| MEP - Baseline | 15 | 23,228 | 8,456,959 | 227.2 MB |
+| MEP - Instanced | 31 | 11,555 | 8,456,959 | 198.6 MB |
+| MEP - Instanced + Batched | 121 | 39 | 8,456,959 | 102.5 MB |
 
 From the results, we observe a total of 39 draw calls (one for each material), and a blazing fast performance figure (~120 FPS)- even better than the [simple batching](#batching-the-scene) approach from earlier (~70 FPS). As briefly mentioned above, we also notice a drastic reduction in the total memory consumption of the scene.
 
@@ -351,7 +359,9 @@ The tools we need to make this work for our scene are saved in an add-on library
 
 Once this search system is implemented into our scene, we are presented with these results.
 
-![BatchedMesh with BVH results](img/mep_hvac-batchedmesh-with-bvh-results.png)
+| Model | FPS | Draw Calls | Triangles |
+| ----- | --- | ---------- | --------- |
+| MEP + HVAC | 29 | 2 | 2,309,814 |
 
 A definite improvement over previous results, and a promising step forward. However, the FPS figure is still lower than I'd like- and now as a last step, we work on optimizing the frame loop.
 
@@ -394,7 +404,9 @@ Beautiful results. The page runs at 60 FPS, especially when idle. On movement, w
 
 Zooming in to an area causes an instant switch of object's LOD based on the search radius. Taking your hand off the mouse results in minimal resource utilization, and the scene will run with almost no overhead (as verified in the Task Manager).
 
-![Final Performance Metrics - BatchedMesh + BVH + Frameloop](img/mep_hvac-batchedmesh-with-bvh-frameloop-results.png)
+| Model | FPS | Draw Calls | Triangles |
+| ----- | --- | ---------- | --------- |
+| MEP + HVAC | 63 | 2 | 2,309,814 |
 
 Adding additional model layers to the scene results in higher initial load time, but our engine is perfectly capable of rendering these additional objects. The final scene with every layer active looks like this.
 
