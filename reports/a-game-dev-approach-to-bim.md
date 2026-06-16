@@ -322,7 +322,7 @@ Here is a graphic to help understand how the dictionary is populated.
 
 ![Dictionary population graphic](img/game-dev-bim-visuals_dictionary_population.gif)
 
-Now, we write some logicical code that tests the distance between our camera and the objects in the scene. If the distance is less than a certain threshold, swap the mesh to hi-res; else keep it at low-res. And voila! We have a working LOD system.
+Now, we write some logical code that tests the distance between our camera and the objects in the scene. If the distance is less than a certain threshold, swap the mesh to hi-res; else keep it at low-res. And voila! We have a working LOD system.
 
 ![BatchedMesh with LOD](img/batchedmesh-with-lod.gif)
 
