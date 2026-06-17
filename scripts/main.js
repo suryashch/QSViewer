@@ -65,7 +65,10 @@ const CONSTANTS = {
     SEARCH_RADIUS: 15,
     FOCUS_RADIUS: 15,
     changeLODcolor: true,
-    darkMode: false
+    darkMode: false,
+    referenceGroup: true,
+    focusGroup: true,
+    contextGroup: true
 }
 
 let struct_bvh;
@@ -75,8 +78,8 @@ let bvh_group = new THREE.Group();
 let struct_group = new THREE.Group();
 
 let focusIds = new Set();
+let contextIds = new Set();
 let referenceIds = new Set();
-let facadeIds = new Set();
 
 
 // // Testing - Basic Loader
@@ -115,24 +118,24 @@ async function init() {
     let struct_map = new Map();
 
     const _focus = [
-        // "sixty5-mep_hires.glb",
-        // "sixty5-mep_lowres.glb",
+        "sixty5-mep_hires.glb",
+        "sixty5-mep_lowres.glb",
         // "sixty5-W-installatie_hires.glb",
         // "sixty5-W-installatie_lowres.glb",
     ]; // this group changes color
 
-    const _reference = [
-        "sixty5-mep_hires.glb",
-        "sixty5-mep_lowres.glb",
-        "sixty5-W-installatie_hires.glb",
-        "sixty5-W-installatie_lowres.glb",
+    const _context = [
+        // "sixty5-mep_hires.glb",
+        // "sixty5-mep_lowres.glb",
+        // "sixty5-W-installatie_hires.glb",
+        // "sixty5-W-installatie_lowres.glb",
         "sixty5-interiors-kitchens-final.glb",
         "sixty5-architectural-interiors-final.glb",
         "sixty5-E-installatie.glb",
         // "sixty5-architectural-insulation-final.glb"
     ]; // this group just stays as is
     
-    const _facade = [
+    const _reference = [
         "sixty5-architectural-facade-final.glb",
         // "sixty5-architectural-structure-final.glb",
         "sixty5-structural.glb",
@@ -154,7 +157,7 @@ async function init() {
         // depthWrite: false
     });
 
-    const structMaterial = new THREE.MeshLambertMaterial({
+    const structMaterial = new THREE.MeshToonMaterial({
         color: "#d9d8d8",
         transparent: true,
         opacity: 1.0,
@@ -165,8 +168,8 @@ async function init() {
     });
     
     material_map = await initFiles( _focus, material_map, "focus", defaultMaterial );
-    material_map = await initFiles( _reference, material_map, "reference", defaultMaterial );
-    struct_map = await initFiles( _facade, struct_map, "facade", structMaterial );
+    material_map = await initFiles( _context, material_map, "context", defaultMaterial );
+    struct_map = await initFiles( _reference, struct_map, "reference", structMaterial );
 
     for (const material of material_map.keys()) {
 
@@ -215,8 +218,8 @@ async function initFiles( files, material_map, qsGroup= null, defMaterial= null 
 
         if (res === "lowres.glb") {
             material_map = await appendMaterialMap( gltf, material_map, material );
-        } else if (name === "sixty5-mep" || name === "sixty5-W-installatie"){
-            material_map = await createMaterialMap( gltf, material_map, qsGroup, material, new THREE.Color( "#F600C1" ) );
+        // } else if (name === "sixty5-mep" || name === "sixty5-W-installatie"){
+        //     material_map = await createMaterialMap( gltf, material_map, qsGroup, material, new THREE.Color( "#F600C1" ) );
         } else {
             material_map = await createMaterialMap( gltf, material_map, qsGroup, material  );
         }
@@ -349,7 +352,6 @@ function appendMaterialMap(gltf, material_map, defMaterial=null ) {
                 for (const subchild of child.children) {
                     subchild.userData.mesh_id = meshId;
                 };
-                console.log(child)
                 
                 return;     // If the object has more than one child (due to mutliple materials) only select the first
             };
@@ -436,11 +438,11 @@ function createBatchedMesh( meshes, material ){
 
                 if (qsGroup === "focus") {
                     focusIds.add(instanceId);
+                } else if ( qsGroup === "context") {
+                    contextIds.add(instanceId)
+                    batchedMesh.setVisibleAt(instanceId, false)
                 } else if ( qsGroup === "reference") {
                     referenceIds.add(instanceId)
-                    batchedMesh.setVisibleAt(instanceId, false)
-                } else if ( qsGroup === "facade") {
-                    facadeIds.add(instanceId)
                 };
 
             };
@@ -481,20 +483,23 @@ function queryNearInstances( cameraPos ) {
         },
         intersectsObject : ( object, instanceId ) => {
 
-            object.setGeometryIdAt( instanceId, object.hiresGeomIdFor[ instanceId ] );
+            if (CONSTANTS.focusGroup) {
+                object.setGeometryIdAt( instanceId, object.hiresGeomIdFor[ instanceId ] );
+            };
             
-            if (object.qsGroup === "facade") {
+            if (object.qsGroup === "reference" && CONSTANTS.referenceGroup) {
                 object.setColorAt( instanceId, structTrans )
                 structIds.add(instanceId);
-            } else if (object.qsGroup === "reference" || object.qsGroup === "focus") {
-                if (focusIds.has(instanceId)){
+            } else if (object.qsGroup === "context" || object.qsGroup === "focus") {
+                if (focusIds.has(instanceId) && CONSTANTS.focusGroup){
                     if ( CONSTANTS.changeLODcolor ) {
                         object.setColorAt( instanceId, highlightColor );
                     }
-                } else if (referenceIds.has(instanceId)){
+                    nearIds.add( instanceId );
+                } else if (contextIds.has(instanceId) && CONSTANTS.contextGroup){
                     object.setVisibleAt( instanceId, true )
+                    nearIds.add( instanceId );
                 }
-                nearIds.add( instanceId );
             }
 
             // if (focusIds.has(instanceId)){
@@ -567,7 +572,7 @@ function updateLODs( cameraPos ) {
                 if ( CONSTANTS.changeLODcolor ) {
                     bm.setColorAt( id, nonHighlightColor );
                 }
-            } else if (referenceIds.has(id)){
+            } else if (contextIds.has(id)){
                 bm.setVisibleAt( id, false );
             }
         };
@@ -578,7 +583,7 @@ function updateLODs( cameraPos ) {
 
         if (!newStruct.has( id )) {
 
-            if (facadeIds.has(id)){
+            if (referenceIds.has(id)){
                 struct_bm.setColorAt( id, structOpaque )
             }
             
@@ -611,7 +616,36 @@ function configGUI() {
         const renderBackgroundColor = v ? "#262837" : "#8f8f8f";
         renderer.setClearColor(renderBackgroundColor)
         requestRender();
-    })
+    });
+
+    const layersFolder = gui.addFolder('Active Layers');
+    layersFolder.add(CONSTANTS, "referenceGroup").name("Facade / Struct").onChange( v => {
+        const struct_bm = struct_group.children.find(child => child.isBatchedMesh);
+        CONSTANTS.referenceGroup = v;
+
+        referenceIds.forEach((i) => {
+            struct_bm.setVisibleAt(i, CONSTANTS.referenceGroup);
+        });
+        updateLODs(camera.position);
+        requestRender();
+    });
+
+    layersFolder.add(CONSTANTS, "focusGroup").name("Piping").onChange( v => {
+        const bm = bvh_group.children.find(child => child.isBatchedMesh);
+        CONSTANTS.focusGroup = v;
+
+        focusIds.forEach((i) => {
+            bm.setVisibleAt(i, CONSTANTS.focusGroup);
+        });
+        requestRender();
+    });
+
+    layersFolder.add(CONSTANTS, "contextGroup").name("Interiors").onChange( v => {
+        CONSTANTS.contextGroup = v;
+
+        updateLODs(camera.position);
+        requestRender();
+    });
 }
 
 window.addEventListener( 'resize', onWindowResize );
@@ -628,7 +662,7 @@ window.addEventListener('dblclick', (event) => {
     if (intersects.length > 0) {
 
         for (let i=0; i<intersects.length; i++) {
-            if (! (intersects[i].object.qsGroup === "facade") ) {
+            if (! (intersects[i].object.qsGroup === "reference") ) {
                 const intersectionPoint = intersects[i].point;
 
                 controls.target.copy( intersectionPoint );
@@ -657,8 +691,8 @@ function requestRender() {
     
     if (
         !renderRequested &&
-        bvh &&
-        camera.position != lastCameraPos
+        bvh
+        // camera.position != lastCameraPos
     ) {
         renderRequested = true;
         requestAnimationFrame( render );
@@ -667,8 +701,6 @@ function requestRender() {
 }
 
 controls.addEventListener( 'change', requestRender);
-
-// window.addEventListener( 'wheel', requestRender );
 window.addEventListener( 'resize', requestRender );
 
 // // let frameCount = 0;
