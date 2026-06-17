@@ -2,7 +2,7 @@
 
 A novel way to view BIM models on the web.
 
-![Cover Shot](reports/img/cover-shot-penthouse-2-lowres-short.gif)
+![Cover Shot](reports/img/cover-shot-penthouse-lower-res.gif)
 
 Construction 3D models face unique challenges from a computer graphics perspective.
 
