@@ -1,12 +1,25 @@
 # A Game Developer's Approach to BIM
 
-> Building Information Modelling (BIM) is a construction-native technology solution that sits at the intersection of data science and 3D modelling. It abets the vast amount of data produced on a construction site, with a 3D visual user interface. However, widespread adoption is lacking in the North American market, and I believe one of the key hurdles to integration is on the 3D modelling front, where efficient open source tools are limited or lacking.
+> Building Information Modelling (BIM) is a construction-native technology solution that sits at the intersection of data science and 3D modelling. It abets the vast amounts of data produced on a construction site, with a 3D visual user interface. However, widespread adoption is lacking in the North American market, and I believe one of the key hurdles to integration is on the 3D modelling front, where efficient open source tools are limited or lacking.
 
 Construction 3D models face unique challenges in the computer graphics space. They are large (high memory), dense (high GPU usage), and often bloated with unnecessary data (high CPU usage). These challenges compound to create a slow, buggy user experience that ultimately kills any motivation behind using it as a tool. In this paper I highlight best practices, grounded in game development principles, to speed up the performance of these 3D models- all while remaining accessible to *anyone* with a web browser.
 
-![QS Viewer - Cover Shot](img/cover-shot-penthouse-2-lowres-short.gif)
+![QS Viewer - Cover Shot](img/cover-shot-penthouse-lower-res.gif)
 
-This research builds on [prior work](https://github.com/suryashch/3d_modelling/blob/main/reports/improving-3d-model-performance-with-LOD.md), which I highly recommend you check out. As well, the primary intent of this paper is to build intuition, so code and technical wording will be limited. The accompanying [research body of knowledge](https://github.com/suryashch/3d_modelling) provides additional details to those interested.
+This research builds on [prior work](https://github.com/suryashch/3d_modelling/blob/main/reports/improving-3d-model-performance-with-LOD.md), which I highly recommend you check out. As well, the primary intent of this paper is to build intuition, so code and technical wording will be limited. The [full repository](https://github.com/suryashch/LOD-control-with-threeJS), and accompanying [research body of knowledge](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/batchedmesh-with-LOD.md) provide additional details to those interested.
+
+## Contents
+
+- [Background](#background-and-model)
+- [Draw Calls](#draw-calls)
+- [Batching](#batching)
+- [Instancing](#instancing)
+- [LOD Control](#lod-control)
+- [Spatial Querying](#spatial-querying)
+- [Frame Loop Updates](#frame-loop-updates)
+- [A Note on Memory](#a-note-on-memory)
+- [Packaging it Together](#packaging-it-together)
+- [Results](#results)
 
 ## Background and Model
 
@@ -69,9 +82,9 @@ To elaborate more on this point, we conduct the following experiment. Let's load
 | Interiors- Baseline | 107 | 3,096 | ~1.6M |
 | Architectural- Baseline | 13 | 16,374 | ~1.6M |
 
-1) The number of `draw calls` in the kitchens model (3,096) is much less than the architectural model (16,374). This implies there far more individual objects in the architectural model than the interiors one.
+1) The number of `draw calls` in the kitchens model (3,096) is much less than the architectural model (16,374). This implies there are more objects in the architectural layer than the interiors one.
 
-2) The total number of triangles in both models are roughly the same (~1.6M). This implies that the interior model is more finely detailed than the architectural model, since the architectural model has more objects.
+2) The total number of triangles in both layers are roughly the same (~1.6M). This implies that the interior model is more detailed than the architectural, since the architectural model has more objects.
 
 3) The FPS count for the interior model is ~100 FPS compared to ~13 from the architectural- significantly lower.
 
@@ -79,7 +92,7 @@ To elaborate more on this point, we conduct the following experiment. Let's load
 
 We conclude from this simple experiment that no matter how capable our GPU is, oftentimes it is CPU bottlenecks that slow us down. We address these bottlenecks through a combination of 2 techniques- `batching` and `instancing`.
 
-## Batching the Scene
+## Batching
 
 To understand how batching works, let's use a familiar example- public transport. Our CPU - GPU pipeline is the equivalent of a highway connecting 2 cities. How do we best move people (data) across this highway? Well, we could send everyone individually in their own cars one at a time. This is analogous to sending one `draw call` for each object in the scene. We can increase the number of lanes in the highway (CPU bandwidth) and improve the throughput. However, as we see in real life- inevitably the traffic clogs and bottlenecks emerge.
 
@@ -322,7 +335,7 @@ Here is a graphic to help understand how the dictionary is populated.
 
 ![Dictionary population graphic](img/game-dev-bim-visuals_dictionary_population.gif)
 
-Now, we write some logical code that tests the distance between our camera and the objects in the scene. If the distance is less than a certain threshold, swap the mesh to hi-res; else keep it at low-res. And voila! We have a working LOD system.
+Now, we write some logicical code that tests the distance between our camera and the objects in the scene. If the distance is less than a certain threshold, swap the mesh to hi-res; else keep it at low-res. And voila! We have a working LOD system.
 
 ![BatchedMesh with LOD](img/batchedmesh-with-lod.gif)
 
