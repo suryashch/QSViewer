@@ -4,13 +4,13 @@ A novel way to view BIM models on the web.
 
 ![Cover Shot](reports/img/cover-shot-penthouse-2-lowres-short.gif)
 
-Construction 3D models face unique challenges on the technology front.
+Construction 3D models face unique challenges from a computer graphics perspective.
 
-- They are large, requiring high memory utilization,
-- They are dense, drawing high amounts of GPU usage,
-- They are often poorly modelled, needing high upfront CPU bandwidth.
+- They are large, utilizing high memory,
+- They are dense, requiring lots of GPU power,
+- They are often poorly modelled, needing extra CPU bandwidth.
 
-QSViewer addresses these challenges while providing a lightweight, web-based viewing experience that changes context as you move around. The demo piece is a 800MB ifc model of a highrise residential development, containing 78k modelled objects, 6 disciplinary layers, and 37 Million triangles, that runs at 240 FPS.
+QSViewer addresses these challenges while providing a lightweight, web-based viewing experience that changes context as you move around. The demo piece is a 800MB ifc model of a highrise residential development, containing 78k modelled objects, 6 disciplinary layers, and 37 Million triangles, that runs at 60 FPS.
 
 [See these results for yourself](https://suryashch.github.io/QSViewer/).
 
