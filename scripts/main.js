@@ -92,11 +92,11 @@ async function init() {
     const _context = [
         // "sixty5-mep_hires.glb",
         // "sixty5-mep_lowres.glb",
-        // "sixty5-W-installatie_hires.glb",
-        // "sixty5-W-installatie_lowres.glb",
+        // "sixty5-W-installatie_hires.glb",                    // Commented out for Mobile vieweing. Include if you're feeling courageous.
+        // "sixty5-W-installatie_lowres.glb",                   // Commented out for Mobile vieweing. Include if you're feeling courageous.
         "sixty5-interiors-kitchens-final.glb",
         "sixty5-architectural-interiors-final.glb",
-        "sixty5-E-installatie.glb",                          // Commented out for Mobile vieweing. Include if you're feeling courageous.
+        // "sixty5-E-installatie.glb",                          // Commented out for Mobile vieweing. Include if you're feeling courageous.
         // "sixty5-architectural-insulation-final.glb"
     ]; // this group just stays as is
     
@@ -167,8 +167,6 @@ async function initFiles( files, material_map, qsGroup= null, defMaterial= null 
 
         if (res === "lowres.glb") {
             material_map = await appendMaterialMap( gltf, material_map, material );
-        // } else if (name === "sixty5-mep" || name === "sixty5-W-installatie"){
-        //     material_map = await createMaterialMap( gltf, material_map, qsGroup, material, new THREE.Color( "#F600C1" ) );
         } else {
             material_map = await createMaterialMap( gltf, material_map, qsGroup, material  );
         }
@@ -578,7 +576,6 @@ function requestRender() {
     if (
         !renderRequested &&
         bvh
-        // camera.position != lastCameraPos
     ) {
         renderRequested = true;
         requestAnimationFrame( render );
