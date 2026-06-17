@@ -13,7 +13,6 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor("#8f8f8f");
-// renderer.setClearColor("#262837");
 renderer.setPixelRatio(window.devicePixelRatio);
 
 document.body.appendChild(renderer.domElement);
@@ -90,11 +89,11 @@ async function init() {
     const _reference = [
         "sixty5-mep_hires.glb",
         "sixty5-mep_lowres.glb",
-        // "sixty5-W-installatie_hires.glb",                    // Commented out for Mobile vieweing. Include if you're feeling courageous.
-        // "sixty5-W-installatie_lowres.glb",                   // Commented out for Mobile vieweing. Include if you're feeling courageous.
+        "sixty5-W-installatie_hires.glb",                    // Commented out for Mobile vieweing. Include if you're feeling courageous.
+        "sixty5-W-installatie_lowres.glb",                   // Commented out for Mobile vieweing. Include if you're feeling courageous.
         "sixty5-interiors-kitchens-final.glb",
         "sixty5-architectural-interiors-final.glb",
-        // "sixty5-E-installatie.glb",                          // Commented out for Mobile vieweing. Include if you're feeling courageous.
+        "sixty5-E-installatie.glb",                          // Commented out for Mobile vieweing. Include if you're feeling courageous.
         // "sixty5-architectural-insulation-final.glb"
     ]; // this group just stays as is
     
