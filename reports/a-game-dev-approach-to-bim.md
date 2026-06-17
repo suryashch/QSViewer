@@ -6,7 +6,7 @@ Construction 3D models face unique challenges in the computer graphics space. Th
 
 ![QS Viewer - Cover Shot](img/cover-shot-penthouse-lower-res.gif)
 
-This research builds on [prior work](https://github.com/suryashch/3d_modelling/blob/main/reports/improving-3d-model-performance-with-LOD.md), which I highly recommend you check out. As well, the primary intent of this paper is to build intuition, so code and technical wording will be limited. The [full repository](https://github.com/suryashch/LOD-control-with-threeJS), and accompanying [research body of knowledge](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/batchedmesh-with-LOD.md) provide additional details to those interested.
+This research builds on [prior work](https://github.com/suryashch/3d_modelling/blob/main/reports/improving-3d-model-performance-with-LOD.md), which I highly recommend you check out. As well, the primary intent of this paper is to build intuition, so code and technical wording will be limited. The accompanying [research body of knowledge](https://github.com/suryashch/3d_modelling/) provide additional details to those interested.
 
 ## Contents
 
