@@ -13,7 +13,6 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor("#8f8f8f");
-// renderer.setClearColor("#262837");
 renderer.setPixelRatio(window.devicePixelRatio);
 
 document.body.appendChild(renderer.domElement);
@@ -23,12 +22,6 @@ const mouse = new THREE.Vector2();
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(-70,70,50);
-
-// const camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 10, 1000 );
-// scene.add( camera );
-// camera.position.set(40,10,25);
-// camera.zoom = 10;
-// camera.updateProjectionMatrix();
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enablePan = true;
@@ -81,34 +74,6 @@ let focusIds = new Set();
 let contextIds = new Set();
 let referenceIds = new Set();
 
-
-// // Testing - Basic Loader
-
-// const loader1 = new GLTFLoader().setPath('public/models/');
-// loader1.load('sixty5-W-installatie_hires.glb', (gltf) => { // 'piperacks_merged.glb
-    
-//     const mesh = gltf.scene
-//     mesh.position.set(0,0,0);
-//     mesh.material = new THREE.MeshStandardMaterial({
-//         color:"#e0e0e0",
-//     });
-//     scene.add(mesh);
-// });
-
-// const loader2 = new GLTFLoader().setPath('public/models/');
-// loader2.load('sixty5-structural.glb', (gltf) => { // 'piperacks_merged.glb
-    
-//     const mesh = gltf.scene
-//     mesh.position.set(0,0,0);
-//     mesh.material = new THREE.MeshStandardMaterial({
-//         color:"#e0e0e0",
-//     });
-//     scene.add(mesh);
-// });
-
-
-
-
 const loader = new GLTFLoader().setPath('public/models/');
 
 init();
@@ -131,30 +96,17 @@ async function init() {
         // "sixty5-W-installatie_lowres.glb",
         "sixty5-interiors-kitchens-final.glb",
         "sixty5-architectural-interiors-final.glb",
-        "sixty5-E-installatie.glb",
+        "sixty5-E-installatie.glb",                          // Commented out for Mobile vieweing. Include if you're feeling courageous.
         // "sixty5-architectural-insulation-final.glb"
     ]; // this group just stays as is
     
     const _reference = [
         "sixty5-architectural-facade-final.glb",
-        // "sixty5-architectural-structure-final.glb",
         "sixty5-structural.glb",
-        // "sixty5-mep_hires.glb",
-        // "sixty5-mep_lowres.glb",
-        // "sixty5-W-installatie_hires.glb",
-        // "sixty5-W-installatie_lowres.glb",
-        // "sixty5-interiors-kitchens-final.glb",
-        // "sixty5-architectural-insulation-final.glb",
-        // "sixty5-architectural-interiors-final.glb",
-        // "sixty5-E-installatie.glb",
     ]; // this group turns transparent
 
     const defaultMaterial = new THREE.MeshLambertMaterial({
         color: "#717171",
-        // transparent: true,
-        // opacity: 1.0,
-        // depthTest: false,
-        // depthWrite: false
     });
 
     const structMaterial = new THREE.MeshToonMaterial({
@@ -162,9 +114,7 @@ async function init() {
         transparent: true,
         opacity: 1.0,
         depthTest: true,
-        // depthWrite: false,
         depthFunc: THREE.LessDepth,
-        // forceSinglePass: true
     });
     
     material_map = await initFiles( _focus, material_map, "focus", defaultMaterial );
@@ -185,7 +135,6 @@ async function init() {
         struct_group.add( bm );
     }
     
-    // console.log(bvh_group);
     bvh = new ObjectBVH( [bvh_group, struct_group] );
 
     scene.add( bvh_group );
@@ -226,21 +175,6 @@ async function initFiles( files, material_map, qsGroup= null, defMaterial= null 
     };
 
     return material_map;
-
-    // for (const material of material_map.keys()) {
-
-    //     const meshes = material_map.get( material );
-    //     const bm = await createBatchedMesh( meshes, material );
-    //     bvh_group.add( bm );
-    // }
-    
-    // console.log(bvh_group);
-
-    // bvh = new ObjectBVH( bvh_group );
-
-    // scene.add( bvh_group );
-
-    // material_map = null;
 }
 
 
@@ -294,8 +228,6 @@ function createMaterialMap( gltf, material_map, qsGroup, defMaterial=null, color
             } else {
                 childMaterialColor = child.material.color;
             }
-
-            // material.transparent = true;
 
             if ( !material_map.has( material ) ) {
                 material_map.set( material, {
@@ -502,55 +434,10 @@ function queryNearInstances( cameraPos ) {
                 }
             }
 
-            // if (focusIds.has(instanceId)){
-            //     if ( CONSTANTS.changeLODcolor ) {
-            //         object.setColorAt( instanceId, highlightColor );
-            //     }
-            // } else if (referenceIds.has(instanceId)){
-            //     object.setVisibleAt( instanceId, true )
-            // } else if (facadeIds.has(instanceId)) {
-            //     object.setColorAt( instanceId, structTrans )
-            // }
-
-            // nearIds.add( instanceId );
             return false;
         }
 
     });
-
-    // querySphere.radius = CONSTANTS.FOCUS_RADIUS;
-
-    // struct_bvh.shapecast({
-
-    //     intersectsBounds : ( box ) => {
-
-    //         if (!querySphere.intersectsBox( box )) return NOT_INTERSECTED;
-    //         return INTERSECTED;
-    //     },
-    //     intersectsObject : ( object, instanceId ) => {
-
-    //         object.setGeometryIdAt( instanceId, object.hiresGeomIdFor[ instanceId ] );
-            
-    //         if (object.qsGroup === "facade") {
-    //             object.setColorAt( instanceId, structTrans )
-    //             structIds.add(instanceId);
-    //         }
-
-    //         // if (focusIds.has(instanceId)){
-    //         //     if ( CONSTANTS.changeLODcolor ) {
-    //         //         object.setColorAt( instanceId, highlightColor );
-    //         //     }
-    //         // } else if (referenceIds.has(instanceId)){
-    //         //     object.setVisibleAt( instanceId, true )
-    //         // } else if (facadeIds.has(instanceId)) {
-    //         //     object.setColorAt( instanceId, structTrans )
-    //         // }
-
-    //         // nearIds.add( instanceId );
-    //         return false;
-    //     }
-
-    // });
 
     return [nearIds, structIds];
 };
@@ -563,7 +450,6 @@ function updateLODs( cameraPos ) {
     const struct_bm = struct_group.children.find(child => child.isBatchedMesh);
 
     prevNear.forEach(( id ) =>{
-        // const structOpaque = new THREE.Vector4(bm.colors[id].r, bm.colors[id].g, bm.colors[id].b, 1);
 
         if (!newNear.has( id )) {
 
@@ -703,21 +589,13 @@ function requestRender() {
 controls.addEventListener( 'change', requestRender);
 window.addEventListener( 'resize', requestRender );
 
-// // let frameCount = 0;
 renderer.render(scene, camera);
 
 function animate() {
     
     requestAnimationFrame( animate );
-    // renderer.render(scene, camera);
     perfMonitor.update(renderer, scene);
 
-    // // Throttled Frame Refresh
-    // if (bvh && frameCount % 100 === 0) {
-    //     requestRender();
-    // }
-    
-    // frameCount++;
 
 }
 
