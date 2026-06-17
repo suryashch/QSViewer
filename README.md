@@ -1,6 +1,6 @@
 # QSViewer
 
-A novel way to view BIM models.
+A novel way to view BIM models on the web.
 
 ![Cover Shot](reports/img/cover-shot-penthouse-2-lowres-short.gif)
 
@@ -18,7 +18,7 @@ QSViewer addresses these challenges while providing a lightweight, web-based vie
 
 ## Features
 
-Context Shifts as you do.
+Context shifts as you do.
 
 ![QSViewer - Context Shift](reports/img/qsviewer-context.gif)
 
@@ -26,7 +26,7 @@ Adjust the Query Radius, as needed.
 
 ![Adjust Query Radius](reports/img/qsviewer-query-radius-2-lowres.gif)
 
-Double Click to center on an object.
+Double click to center on an object.
 
 ![Double Click to Center](reports/img/qsviewer-doubleclick-lowres-2.gif)
 
@@ -34,7 +34,7 @@ Dark mode, on demand.
 
 ![Dark Mode](reports/img/qsviewer-darkmode-lowres-short.gif)
 
-Works on Mobile.
+Works on mobile.
 
 ![QSViewer - Mobile View](reports/img/qsviewer-mobile.gif)
 
