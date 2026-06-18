@@ -344,6 +344,7 @@ Here are the performance metrics.
 | Model | FPS | Draw Calls | Triangles |
 | ----- | --- | ---------- | --------- |
 | MEP- Baseline | 15 | 23,228 | 8,456,959 |
+| MEP- Instanced + Batched | 121 | 39 | 8,456,959 |
 | **MEP- LOD Controlled** | **16** | **39** | **1,704,625** |
 
 Some interesting observations. The number of triangles in the scene is down- 12% of the original 8M. Draw calls are constant, ([consistent with our previous research](improving-3d-model-performance-with-LOD.md)).
