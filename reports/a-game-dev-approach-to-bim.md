@@ -349,7 +349,7 @@ Here are the performance metrics.
 
 Some interesting observations. The number of triangles in the scene is down- 12% of the original 8M. Draw calls are constant, ([consistent with our previous research](improving-3d-model-performance-with-LOD.md)).
 
-However, the FPS figure is still low. Running some diagnostic tests, we see that the CPU is still dominating the resources of the scene. It seems that our LOD system is conducting distance checks between our camera and every object in the scene, every frame. Since we have a large number of objects, this is ultimately whats causing the slowdown.
+However, the FPS figure is low. Running some diagnostic tests, we see that the CPU is still dominating the resources of the scene. It seems that our LOD system is conducting distance checks between our camera and every object in the scene, every frame. Since we have a large number of objects, this is ultimately whats causing the slowdown.
 
 We want to find the closest objects to our camera, while limiting the number of distance checks being conducted. That's where `Spatial Querying` comes into play.
 
@@ -384,7 +384,7 @@ Just through 16 calculations, we were already able to narrow down the number of 
 | Naive Search | 20,000 | - | 127 | ~200 ms |
 | Octree Search | 20,000 | 467 | 127 | ~300 μs |
 
-> [The experiment above](https://github.com/suryashch/octree/blob/main/reports/notebooks/octree_querying.ipynb) tracks the amount of time taken by different search algorithms to return the closest objects to a point of interest. The Naive Search algorithm brute-forced its way through 20,000 objects and returned 127 of them in ~200 miliseconds. The octree algorithm searched through the same 20,000 objects, but first subsetted down to only 467, before returning the same 127. However, octree search took 300 *micro*seconds to run the same task- that's 3 orders of magnitude quicker.
+> [The experiment above](https://github.com/suryashch/octree/blob/main/reports/notebooks/octree_querying.ipynb) tracks the amount of time taken by different search algorithms to return the closest objects to a point of interest. The naive search algorithm brute-forced its way through 20,000 objects and returned 127 of them in ~200 miliseconds. The octree algorithm searched through the same 20,000 objects, but first subsetted down to only 467, before returning 127. However, octree search took 300 *micro*seconds to run the same task- that's 3 orders of magnitude quicker.
 
 [Here is a cool 3D visualizer for how an octree works.](https://suryashch.github.io/octree/)
 
@@ -397,7 +397,7 @@ Once this search system is implemented into our scene, we are presented with the
 | Model | FPS | Draw Calls | Triangles |
 | ----- | --- | ---------- | --------- |
 | MEP + HVAC- Baseline | 10 | 34,535 | 23,555,000 |
-| **MEP + HVAC- BVH Accelerated Querying** | **29** | **2** | **2,309,814** |
+| **MEP + HVAC- BVH Accelerated Querying** | **29** | **39** | **2,309,814** |
 
 A definite improvement over previous results, and a promising step forward. However, the FPS figure is still lower than I'd like- and now as a last step, we work on optimizing the frame loop.
 
@@ -443,7 +443,7 @@ Zooming in to an area causes an instant switch of the object's LOD based on the 
 | Model | FPS | Draw Calls | Triangles |
 | ----- | --- | ---------- | --------- |
 | MEP + HVAC- Baseline | 10 | 34,535 | 23,555,000 |
-| **MEP + HVAC- Frameloop Optimizations** | **63** | **2** | **2,309,814** |
+| **MEP + HVAC- Frameloop Optimizations** | **63** | **39** | **2,309,814** |
 
 Adding additional model layers to the scene results in longer initial load time, but our engine is perfectly capable of rendering these additional objects. The final scene with every layer active looks like this.
 
@@ -501,7 +501,7 @@ Out of curiousity, I tried the above experiments with an NVIDIA graphics card an
 
 Mind boggling results.
 
-An important finding here is that the scene's performance scales extremely well with an increase in model size. With instancing, batching and LOD control, we can effectively "cap" the total number of `draw calls` and `triangles` needing to be rendered to the screen. As well, the distance testing algorithm sclaes in log time, i.e. as the data scales by a factor of N, the time taken to run our algorithm only increases by a factor of log(N).
+An important finding here is that the scene's performance scales extremely well with an increase in model size. With instancing, batching and LOD control, we can effectively "cap" the total number of `draw calls` and `triangles` needing to be rendered to the screen. As well, the distance testing algorithm scales in log time, i.e. as the data scales by a factor of N, the time taken to run our algorithm only increases by a factor of log(N).
 
 ## Conclusion
 
