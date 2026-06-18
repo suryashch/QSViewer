@@ -6,7 +6,7 @@ Construction 3D models face unique challenges in the computer graphics space. Th
 
 ![QS Viewer - Cover Shot](img/cover-shot-penthouse-lower-res.gif)
 
-This research builds on [prior work](https://github.com/suryashch/3d_modelling/blob/main/reports/improving-3d-model-performance-with-LOD.md), which I highly recommend you check out. As well, the primary intent of this paper is to build intuition, so code and technical wording will be limited. The accompanying [research body of knowledge](https://github.com/suryashch/3d_modelling/) provides additional details to those interested.
+This research builds on [prior work](https://github.com/suryashch/LOD-control-with-threeJS/blob/main/reports/3d-model-LOD.md), which I highly recommend you check out. As well, the primary intent of this paper is to build intuition, so code and technical wording will be limited. The accompanying [research body of knowledge](https://github.com/suryashch/3d_modelling/) provides additional details to those interested.
 
 ## Contents
 
@@ -71,7 +71,7 @@ The performance is slow and buggy. I would not want to use this for more than a 
 
 | Model | FPS | Draw Calls | Triangles |
 | ----- | --- | ---------- | --------- |
-| MEP + HVAC- Baseline | 10 | 34,535 | 23,555,000 |
+| MEP + HVAC- Baseline | ~10 | 34,535 | 23,555,000 |
 
 To elaborate more on this point, we conduct the following experiment. Let's load two different layers of our BIM model- the `Interiors/Kitchens` model and the `Architectural` model. Measuring the performance of each, we observe some striking differences.
 
@@ -259,7 +259,7 @@ These results alone would be enough for computers to comfortably render, but we 
 
 ## LOD Control
 
-Now that we have addressed the `draw calls` issue, the focus shifts back to the GPU side, namely- limiting the number of `triangles` that need to get drawn to the screen. As determined in [previous research](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/per-object-lod-control-with-threejs.md), this can be managed with Level of Detail (LOD) control. This process entails loading a low resolution mesh to the scene and swapping to a high resolution one when the user zooms in, resulting in vastly improved rendering time.
+Now that we have addressed the `draw calls` issue, the focus shifts back to the GPU side, namely- limiting the number of `triangles` that need to get drawn to the screen. As determined in [previous research](https://github.com/suryashch/LOD-control-with-threeJS/blob/main/reports/3d-model-LOD.md), this can be managed with Level of Detail (LOD) control. This process entails loading a low resolution mesh to the scene and swapping to a high resolution one when the user zooms in, resulting in vastly improved rendering time.
 
 ![Per Object LOD Control](img/refined-lod-model.gif)
 
@@ -335,7 +335,7 @@ Here is a graphic to help understand how the dictionary is populated.
 
 ![Dictionary population graphic](img/game-dev-bim-visuals_dictionary_population.gif)
 
-Now, we write some logicical code that tests the distance between our camera and the objects in the scene. If the distance is less than a certain threshold, swap the mesh to hi-res; else keep it at low-res. And voila! We have a working LOD system.
+Now, we write some logical code that tests the distance between our camera and the objects in the scene. If the distance is less than a certain threshold, swap the mesh to hi-res; else keep it at low-res. And voila! We have a working LOD system.
 
 ![BatchedMesh with LOD](img/batchedmesh-with-lod.gif)
 
@@ -354,7 +354,7 @@ We want to find the closest objects to our camera, while limiting the number of 
 
 ## Spatial Querying
 
-[Spatial querying requires its own document to fully appreciate](https://github.com/suryashch/octree/blob/main/reports/octree.md). Here, we condense down to the basics. How do you efficiently test multiple objects' distance against a point? As described in the section above, we could naively calculate the distance between every point and our camera; check to see if its within a specified radius, and return `TRUE` or `FALSE`. For small scenes, this is perfectly fine and internally, is how the [Three.LOD()](https://threejs.org/docs/#LOD) system works.
+[Spatial querying requires its own document to fully appreciate](https://github.com/suryashch/octree/blob/main/reports/octree.md). Here, we condense down to the basics. How do you efficiently test multiple objects' distance against a point? As described in the section above, we could naively calculate the distance between every point and our camera; check to see if its within a specified radius, and return `TRUE` or `FALSE`. For small scenes ([like in our previous implementation](https://suryashch.github.io/LOD-control-with-threeJS/), this is perfectly fine.
 
 ![Traditional LOD Search Systems](img/typical-distance-search.gif)
 
@@ -385,6 +385,8 @@ Just through 16 calculations, we were already able to narrow down the number of 
 
 > [The experiment above](https://github.com/suryashch/octree/blob/main/reports/notebooks/octree_querying.ipynb) tracks the amount of time taken by different search algorithms to return the closest objects to a point of interest. The Naive Search algorithm brute-forced its way through 20,000 objects and returned 127 of them in ~200 miliseconds. The octree algorithm searched through the same 20,000 objects, but first subsetted down to only 467, before returning the same 127. However, octree search took 300 *micro*seconds to run the same task- that's 3 orders of magnitude quicker.
 
+[Here is a cool 3D visualizer for how an octree works.](https://suryashch.github.io/octree/)
+
 In this project, I'm working with a special flavour of `octree` called a Bounding Volume Hierarchy (`BVH`). This data structure works the same way as an `octree` except, the cubes are drawn as bounding boxes around the meshes. It is best suited for scenes where objects are condensed in a small space. The [Wikipedia article](https://en.wikipedia.org/wiki/Bounding_volume_hierarchy) on BVH's is actually a great resource for understanding its workings.
 
 The tools we need to make this work for our scene are saved in an add-on library to three.js, called [three-mesh-bvh](https://github.com/gkjohnson/three-mesh-bvh), by gkjohnson.
@@ -411,7 +413,7 @@ Every frame, our CPU is -
 - Running our octree search algorithm and determining which objects are within the search critera.
 - Sending the associated `draw calls` to the GPU.
 
-That is quite a lot of work being done every frame and frankly, it doesn't need to be.
+That is quite a lot of work being done every frame- and frankly, it doesn't need to be.
 
 - Our LOD's will only need to be swapped when the user zooms in.
 - The camera position will only need to be updated if the user clicks and moves the mouse.
@@ -456,7 +458,7 @@ Improvements can be made through instancing ([as seen in the above section](#ins
 
 ## Packaging it Together
 
-Let's recap. A BIM model poses 3 main challenges ->
+Let's recap. A BIM model poses 3 main challenges:
 
 - A large number of `draw calls` being sent to the GPU,
 - A large number of `triangles`, needing to be rendered to the screen,
@@ -512,7 +514,7 @@ You can find more information about this research on my [github](https://github.
 
 ## Links
 
-[Improving 3D Model Performance with LOD Control](https://github.com/suryashch/3d_modelling/blob/main/reports/improving-3d-model-performance-with-LOD.md)
+[Improving 3D Model Performance with LOD Control](https://github.com/suryashch/LOD-control-with-threeJS/blob/main/reports/3d-model-LOD.md)
 
 [QSViewer Github](https://github.com/suryashch/QSViewer)
 
@@ -548,7 +550,11 @@ You can find more information about this research on my [github](https://github.
 
 [three.LOD()](https://threejs.org/docs/#LOD)
 
+[LOD-control-in-threejs github.io]https://suryashch.github.io/LOD-control-with-threeJS/)
+
 [Octree Querying - Jupyter Notebook](https://github.com/suryashch/octree/blob/main/reports/notebooks/octree_querying.ipynb)
+
+[octree visualizer github.io](https://suryashch.github.io/octree/)
 
 [Bounding Volume Hierarchy - Wikipedia article](https://en.wikipedia.org/wiki/Bounding_volume_hierarchy)
 
