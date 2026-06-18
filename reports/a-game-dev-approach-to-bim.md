@@ -1,6 +1,6 @@
 # A Game Developer's Approach to BIM
 
-> Building Information Modelling (BIM) is a construction-native technology solution that sits at the intersection of data science and 3D modelling. It abets the vast amounts of data produced on a construction site, with a 3D visual user interface. However, widespread adoption is lacking in the North American market, and I believe one of the key hurdles to integration is on the 3D modelling front, where efficient open source tools are limited or lacking.
+> Building Information Modelling (BIM) is a construction-native technology solution that sits at the intersection of data science and 3D modelling. It abets the vast amounts of data produced on a construction site, with a 3D visual user interface. However, widespread adoption is lacking in the North American market, and I believe one of the key hurdles to integration is on the 3D modelling front, where efficient open-source tools are limited or lacking.
 
 Construction 3D models face unique challenges in the computer graphics space. They are large (high memory), dense (high GPU usage), and often bloated with unnecessary data (high CPU usage). These challenges compound to create a slow, buggy user experience that ultimately kills any motivation behind using it as a tool. In this paper I highlight best practices, grounded in game development principles, to speed up the performance of these 3D models- all while remaining accessible to *anyone* with a web browser.
 
@@ -23,7 +23,7 @@ This research builds on [prior work](https://github.com/suryashch/LOD-control-wi
 
 ## Background and Model
 
-In this project we shall be working with an open source library known as [three.js](https://threejs.org/). While there are better dedicated options for working with 3D data, threejs' selling point is that it runs in the web browser. Once created, the scene can be sent to anyone via URL and and can be opened without needing to download any specialized software.
+In this project we shall be working with an open source library known as [three.js](https://threejs.org/). While there are better dedicated options for working with 3D data, three.js' selling point is that it runs in the web browser. Once created, the scene can be sent to anyone via URL and can be opened without needing to download any specialized software.
 
 That said, the concepts explained in the rest of this paper can be easily reproduced in your tool of choice.
 
@@ -45,7 +45,7 @@ And here is a breakdown of the data.
 | Structural | 605 | 55,059 | 7.2 MB |
 | **Total** | **78,359** | **38,990,591** | **814.1 MB** |
 
-The MEP and HVAC models alone account for ~23M of the total triangles. This project is a significant scale-up from previous work, and should be reflective of the vast majority of BIM projects.
+The MEP and HVAC models alone account for ~23M of the total triangles. This project is a significant scale-up from previous work and should be reflective of the vast majority of BIM projects.
 
 ## Draw Calls
 
@@ -115,7 +115,7 @@ To efficiently store our objects in the `BatchedMesh`, we need the following 4 d
 - The total number of expected `indices` in the scene (the collection of vertices used to construct a `triangle`),
 - The unique materials used in the scene.
 
-We acquire this information by [iterating through every mesh in our scene](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/batched-mesh.md), and saving the geometry data to a dictionary. We also keep track of the [transformation matrix](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/bpy_with_lod.md) of each mesh, as these store the location data of individual objects in the scene.
+We acquire this information by [iterating through every mesh in our scene](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/batched-mesh.md) and saving the geometry data to a dictionary. We also keep track of the [transformation matrix](https://github.com/suryashch/3d_modelling/blob/main/research/hosting-3d-model/bpy_with_lod.md) of each mesh, as these store the location data of individual objects in the scene.
 
 > Note: We must create one `BatchedMesh` object for every material in the scene. This is due to the architecture of the GPU and [Shader Programs](https://shader-tutorial.dev/basics/introduction/) specifically.
 
@@ -265,7 +265,7 @@ Now that we have addressed the `draw calls` issue, the focus shifts back to the 
 
 However, applying this concept to our `BatchedMesh` object requires some additional thinking. For starters, we no longer have individual objects in our scene- we have `instances`. As well, all the mesh data is stored within an existing data structure- the `batchedMesh`, hence our previously implemented [three.LOD()](https://threejs.org/docs/#LOD) class of objects wont work.
 
-Instead, we need to manually populate our `batchedMesh` object with the different LOD's. For each unique goemetry in the scene, we now also need to save our mesh's low-resolution geometry. Hence, we tweak our dictionary yet once again, according to the following rules.
+Instead, we need to manually populate our `batchedMesh` object with the different LOD's. For each unique geometry in the scene, we now also need to save our mesh's low-resolution geometry. Hence, we tweak our dictionary yet once again, according to the following rules.
 
 - We populate our dictionary as normal using the data from our HI-RES model.
 - Now, we iterate over all objects in the LOW-RES model.
@@ -349,7 +349,7 @@ Here are the performance metrics.
 
 Some interesting observations. The number of triangles in the scene is down- 12% of the original 8M. Draw calls are constant, ([consistent with our previous research](improving-3d-model-performance-with-LOD.md)).
 
-However, the FPS figure is low. Running some diagnostic tests, we see that the CPU is still dominating the resources of the scene. It seems that our LOD system is conducting distance checks between our camera and every object in the scene, every frame. Since we have a large number of objects, this is ultimately whats causing the slowdown.
+However, the FPS figure is low. Running some diagnostic tests, we see that the CPU is still dominating the resources of the scene. It seems that our LOD system is conducting distance checks between our camera and every object in the scene, every frame. Since we have a large number of objects, this is ultimately what's causing the slowdown.
 
 We want to find the closest objects to our camera, while limiting the number of distance checks being conducted. That's where `Spatial Querying` comes into play.
 
@@ -373,7 +373,7 @@ Our goal here is to return all the points that are within a specified radius fro
 
 ![Octree Example - L1](img/octree-space-L1.png)
 
-In one swoop, we have vastly reduced the number of sample objects. If a cube meets the distance critera, we divide it into a further 8 cubes and run another distance check at this lower level.
+In one swoop, we have vastly reduced the number of sample objects. If a cube meets the distance criteria, we divide it into a further 8 cubes and run another distance check at this lower level.
 
 ![Octree Example - L2](img/octree-space-L2.png)
 
@@ -384,7 +384,7 @@ Just through 16 calculations, we were already able to narrow down the number of 
 | Naive Search | 20,000 | - | 127 | ~200 ms |
 | Octree Search | 20,000 | 467 | 127 | ~300 μs |
 
-> [The experiment above](https://github.com/suryashch/octree/blob/main/reports/notebooks/octree_querying.ipynb) tracks the amount of time taken by different search algorithms to return the closest objects to a point of interest. The naive search algorithm brute-forced its way through 20,000 objects and returned 127 of them in ~200 miliseconds. The octree algorithm searched through the same 20,000 objects, but first subsetted down to only 467, before returning 127. However, octree search took 300 *micro*seconds to run the same task- that's 3 orders of magnitude quicker.
+> [The experiment above](https://github.com/suryashch/octree/blob/main/reports/notebooks/octree_querying.ipynb) tracks the amount of time taken by different search algorithms to return the closest objects to a point of interest. The naive search algorithm brute-forced its way through 20,000 objects and returned 127 of them in ~200 milliseconds. The octree algorithm searched through the same 20,000 objects, but first subsetted down to only 467, before returning 127. However, octree search took 300 *micro*seconds to run the same task- that's 3 orders of magnitude quicker.
 
 [Here is a cool 3D visualizer for how an octree works.](https://suryashch.github.io/octree/)
 
@@ -403,7 +403,7 @@ A definite improvement over previous results, and a promising step forward. Howe
 
 ## Frame Loop Updates
 
-A 3D scene is essentially a group of functions that update the pixels on the screen, known as a `Frame Loop`. Depending on your screen's refresh rate, the `frame loop` can run 60 times per second (60 FPS), or anywhere upto 240 FPS like in high-end gaming machines. Usually, we wouldn't think about this too much, and adequate results can be achieved even with every function running every frame.
+A 3D scene is essentially a group of functions that update the pixels on the screen, known as a `Frame Loop`. Depending on your screen's refresh rate, the `frame loop` can run 60 times per second (60 FPS), or anywhere up to 240 FPS like in high-end gaming machines. Usually, we wouldn't think about this too much, and adequate results can be achieved even with every function running every frame.
 
 However, if we take a look at the different tasks running in our `frame loop`, we can start to see why our performance figure is low.
 
@@ -411,7 +411,7 @@ Every frame, our CPU is -
 
 - Checking for user inputs- mouse clicks, scrolling, panning.
 - Updating the camera position based on mouse movements.
-- Running our octree search algorithm and determining which objects are within the search critera.
+- Running our octree search algorithm and determining which objects are within the bounds.
 - Sending the associated `draw calls` to the GPU.
 
 That is quite a lot of work being done every frame- and frankly, it doesn't need to be.
@@ -495,7 +495,7 @@ Even with movement, our full scene runs comfortably at ~100 FPS which is well ab
 
 > Note: The performance figures may be slightly different depending on hardware. The results listed above are representative of modest Windows-based machines.
 
-Out of curiousity, I tried the above experiments with an NVIDIA graphics card and ended up breaking the scale. 364 FPS was the peak measurement.
+Out of curiosity, I tried the above experiments with an NVIDIA graphics card and ended up breaking the scale. 364 FPS was the peak measurement.
 
 ![Performance results - Full optimized scene with NVIDIA graphics card](img/performance-results-fullscene-nvidia.gif)
 
