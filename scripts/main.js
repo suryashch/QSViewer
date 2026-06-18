@@ -8,6 +8,30 @@ import { FrameProfiler } from './utils/FrameProfiler.js';
 
 import { ObjectBVH, acceleratedRaycast, INTERSECTED, NOT_INTERSECTED, computeBatchedBoundsTree } from 'three-mesh-bvh';
 
+
+// Get DOM element references
+const loadingScreen = document.getElementById('loading-screen');
+const loadingText = document.getElementById('loading-text');
+
+const loadingManager = new THREE.LoadingManager();
+
+// Update percent text as assets load
+loadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
+    const progressPercent = Math.floor((itemsLoaded / itemsTotal) * 100);
+    loadingText.textContent = `Loading... ${progressPercent}%`;
+};
+
+// Hide the loading symbol when finished
+loadingManager.onLoad = function () {
+    loadingScreen.style.opacity = '0';
+    
+    // Completely remove the element from layout after fade transition
+    setTimeout(() => {
+        loadingScreen.style.display = 'none';
+    }, 500);
+};
+
+
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
@@ -60,7 +84,7 @@ const CONSTANTS = {
     changeLODcolor: true,
     darkMode: false,
     referenceGroup: true,
-    focusGroup: true,
+    focusGroup: false,
     contextGroup: true
 }
 
@@ -74,7 +98,7 @@ let focusIds = new Set();
 let contextIds = new Set();
 let referenceIds = new Set();
 
-const loader = new GLTFLoader().setPath('public/models/');
+const loader = new GLTFLoader(loadingManager).setPath('public/models/');
 
 init();
 
@@ -368,6 +392,9 @@ function createBatchedMesh( meshes, material ){
 
                 if (qsGroup === "focus") {
                     focusIds.add(instanceId);
+                    if (!CONSTANTS.focusGroup) {
+                        batchedMesh.setVisibleAt(instanceId, false)
+                    }
                 } else if ( qsGroup === "context") {
                     contextIds.add(instanceId)
                     batchedMesh.setVisibleAt(instanceId, false)
