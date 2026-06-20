@@ -174,7 +174,7 @@ Just by batching our scene, our FPS count has jumped up to ~70 FPS. All other me
 
 ## Instancing
 
-Another powerful technique to improve the `draw calls` in the scene is known as [`Instancing`](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/instanced-mesh.md). This process works best when you have multiple objects in a scene that all share the same geometry. Think leaves on a tree, bolts in a steel beam, 90 degree elbows on a pipe- all are essentially the same object, just loaded to different positions.
+Another powerful technique to reduce `draw calls` is known as [`Instancing`](https://github.com/suryashch/3d_modelling/blob/main/research/optimizing-the-scene/instanced-mesh.md). This process works best when you have multiple objects in a scene that all share the same geometry. Think leaves on a tree, bolts in a steel beam, 90 degree elbows on a pipe- all are essentially the same object, just loaded to different positions.
 
 ![Instancing Example. Credit: three.js](img/instancing-threejs-example.gif)
 
