@@ -190,7 +190,7 @@ The default `three.js` library once again provides us with tools to address inst
 
 As described in the [section on BatchedMesh](#batching-the-scene), this information can be acquired by iterating through the objects in our scene. We slightly tweak our dictionary object from earlier as follows.
 
-- If we encounter an object in the scene whose geometry is exactly the same as another, we do not create a new `mesh_id`. We utilize the existing entry.
+- If we encounter an object whose geometry is exactly the same as another, we do not create a new `mesh_id`. We utilize the existing entry.
 - For these instanced geometries, we add the location data of the mesh to `matrices_data`, which is now a list instead of a single entry. As a result, we will have multiple `tranformation_matrices` for a unique piece of geometry.
 
 Here is what our tweaked dictionary looks like.
