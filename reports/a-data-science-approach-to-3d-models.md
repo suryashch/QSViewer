@@ -269,7 +269,7 @@ These results alone would be enough for computers to comfortably render, but we 
 
 ## LOD Control
 
-Now that we have addressed the `draw calls` issue, the focus shifts back to the GPU side, namely- limiting the number of `triangles` that need to get drawn to the screen. As previously noted, our scene contains ~38M triangles. Even loading only the MEP and HVAC models (~23M triangles) to our batched scene, the performance instantly degrades due to the sheer volume of data.
+Now that we have addressed the `draw calls` issue, the focus shifts back to the GPU side, namely- limiting the number of `triangles` that need to get drawn to the screen. As previously noted, our scene contains ~37M triangles. Even loading only the MEP and HVAC models (~23M triangles) to our batched scene, the performance instantly degrades due to the sheer volume of data.
 
 | Model | FPS | Draw Calls | Triangles |
 | ----- | --- | ---------- | --------- |
@@ -502,7 +502,7 @@ Zooming into the model improves performance across the board, due to there being
 
 ![Performance Comparison- HVAC zoomed in versus baseline](img/performance-results-hvac-zoomed-in.png)
 
-An important finding here is that the scene's performance scales extremely well with an increase in model size. With instancing, batching and LOD control, we can effectively "cap" the total number of `draw calls` and `triangles` needing to be rendered to the screen. As well, the distance testing algorithm scales in log time, i.e. as the data scales by a factor of N, the time taken to run our algorithm only increases by a factor of log(N). Hence, when loading all the model layers to our scene, this is what we observe.
+An important finding here is that the scene's performance scales extremely well with an increase in model size. With instancing, batching and LOD control, we can effectively "cap" the total number of `draw calls` and `triangles`. As well, the distance testing algorithm scales in log time, i.e. as the data scales by a factor of N, the time taken to run our algorithm only increases by a factor of log(N). Hence, when we load all the model layers to our scene, this is what we observe.
 
 ![Performance results - full scene with graph](img/performance-results-all-layers-graph-lowres.gif)
 
@@ -512,7 +512,7 @@ For reference, here is just the MEP, HVAC and Electrical layers, loaded without 
 
 ![Performance results - baseline naive](img/performance-results-naive-graph.gif)
 
-As mentioned above, our scene throttles down when there is no change. Hence, taking our hand off the mouse yields these results.
+As previously mentioned, our scene throttles down when there is no change. Hence, taking our hand off the mouse yields these results.
 
 ![Performance results - Full optimized scene at idle](img/performance-results-fullscene-zoomedin-idle.png)
 
