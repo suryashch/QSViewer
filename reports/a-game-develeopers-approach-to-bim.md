@@ -1,4 +1,4 @@
-# A Data Science Approach to Construction 3D Models
+# A Game Developer's Approach to BIM
 
 > Building Information Modelling (BIM) is a construction-native technology solution that sits at the intersection of data science and 3D modelling. It abets the vast amounts of data produced on a construction site, with a 3D visual user interface. However, widespread adoption is lacking in the North American market, and I believe one of the key hurdles to integration is on the 3D modelling front, where efficient open-source tools are limited or lacking.
 
