@@ -2,35 +2,13 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 import { PerformanceMonitor } from './utils/PerformanceMonitor.js';
 import { FrameProfiler } from './utils/FrameProfiler.js';
+import { PerformanceGraphMonitor } from './utils/GraphMonitor.js';
 
 import { ObjectBVH, acceleratedRaycast, INTERSECTED, NOT_INTERSECTED, computeBatchedBoundsTree } from 'three-mesh-bvh';
-
-
-// Get DOM element references
-const loadingScreen = document.getElementById('loading-screen');
-const loadingText = document.getElementById('loading-text');
-
-const loadingManager = new THREE.LoadingManager();
-
-// Update percent text as assets load
-loadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
-    const progressPercent = Math.floor((itemsLoaded / itemsTotal) * 100);
-    loadingText.textContent = `Loading... ${progressPercent}%`;
-};
-
-// Hide the loading symbol when finished
-loadingManager.onLoad = function () {
-    loadingScreen.style.opacity = '0';
-    
-    // Completely remove the element from layout after fade transition
-    setTimeout(() => {
-        loadingScreen.style.display = 'none';
-    }, 500);
-};
-
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -73,6 +51,7 @@ scene.add( gridHelper );
 
 const perfMonitor = new PerformanceMonitor();
 const profiler = new FrameProfiler(60);
+// const graphMonitor = new PerformanceGraphMonitor();
 
 const raycaster = new THREE.Raycaster();
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
@@ -85,8 +64,11 @@ const CONSTANTS = {
     darkMode: false,
     referenceGroup: true,
     focusGroup: false,
-    contextGroup: true
+    contextGroup: true,
+    startDolly: false
 }
+
+// Full Implementation
 
 let struct_bvh;
 let bvh;
@@ -98,7 +80,7 @@ let focusIds = new Set();
 let contextIds = new Set();
 let referenceIds = new Set();
 
-const loader = new GLTFLoader(loadingManager).setPath('public/models/');
+const loader = new GLTFLoader().setPath('public/models/');
 
 init();
 
@@ -108,21 +90,22 @@ async function init() {
 
     const _focus = [
         "sixty5-mep_hires.glb",
+        // "scene_test-v1.glb"
         "sixty5-mep_lowres.glb",
         // "sixty5-W-installatie_hires.glb",
         // "sixty5-W-installatie_lowres.glb",
-    ]; // this group changes color
+    ]; // this group changes color and LOD
 
     const _context = [
         // "sixty5-mep_hires.glb",
         // "sixty5-mep_lowres.glb",
-        // "sixty5-W-installatie_hires.glb",                    // Commented out for Mobile vieweing. Include if you're feeling courageous.
-        // "sixty5-W-installatie_lowres.glb",                   // Commented out for Mobile vieweing. Include if you're feeling courageous.
+        "sixty5-W-installatie_hires.glb",                    // Commented out for Mobile viewing. Include if you're feeling courageous.
+        // "sixty5-W-installatie_lowres.glb",                   // Commented out for Mobile viewing. Include if you're feeling courageous.
         "sixty5-interiors-kitchens-final.glb",
         "sixty5-architectural-interiors-final.glb",
-        // "sixty5-E-installatie.glb",                          // Commented out for Mobile vieweing. Include if you're feeling courageous.
+        "sixty5-E-installatie.glb",                          // Commented out for Mobile viewing. Include if you're feeling courageous.
         // "sixty5-architectural-insulation-final.glb"
-    ]; // this group just stays as is
+    ]; // this group appears when the user is close, and disappears once zoomed out
     
     const _reference = [
         "sixty5-architectural-facade-final.glb",
@@ -145,17 +128,19 @@ async function init() {
     material_map = await initFiles( _context, material_map, "context", defaultMaterial );
     struct_map = await initFiles( _reference, struct_map, "reference", structMaterial );
 
+    console.log(struct_map);
+
     for (const material of material_map.keys()) {
 
         const meshes = material_map.get( material );
-        const bm = await createBatchedMesh( meshes, material );
+        const bm = createBatchedMesh( meshes, material );
         bvh_group.add( bm );
     }
 
     for (const material of struct_map.keys()) {
 
         const meshes = struct_map.get( material );
-        const bm = await createBatchedMesh( meshes, material );
+        const bm = createBatchedMesh( meshes, material );
         struct_group.add( bm );
     }
     
@@ -169,9 +154,23 @@ async function init() {
     configGUI();
     requestRender();
 }
+
+function disposeMaterial(material) {
+    // Dispose the material itself
+    material.dispose();
+    
+    // Iterate through material properties to dispose attached textures
+    for (const key in material) {
+        const value = material[key];
+        if (value && typeof value === 'object' && 'minFilter' in value) {
+            value.dispose();
+        }
+    }
+};
  
 async function initFiles( files, material_map, qsGroup= null, defMaterial= null ) {
     let material;
+    let gltf;
 
     if (!defMaterial) {
         material = new THREE.MeshStandardMaterial({
@@ -185,7 +184,7 @@ async function initFiles( files, material_map, qsGroup= null, defMaterial= null 
     }
     
     for (const _file of files) {
-        const gltf = await loader.loadAsync( _file );
+        gltf = await loader.loadAsync( _file );
 
         const [name, res] = _file.split("_");
 
@@ -194,6 +193,8 @@ async function initFiles( files, material_map, qsGroup= null, defMaterial= null 
         } else {
             material_map = await createMaterialMap( gltf, material_map, qsGroup, material  );
         }
+
+        gltf = null;
     };
 
     return material_map;
@@ -201,6 +202,11 @@ async function initFiles( files, material_map, qsGroup= null, defMaterial= null 
 
 
 function createMaterialMap( gltf, material_map, qsGroup, defMaterial=null, color=null ){
+    let meshId;
+    let material_key;
+    let material;
+    let geometry;
+    let inst_matrix;
 
     gltf.scene.traverse((child) => {
         if ( child.userData.mesh_id ) {
@@ -213,12 +219,8 @@ function createMaterialMap( gltf, material_map, qsGroup, defMaterial=null, color
                 };
             }
             
-            const meshId = child.userData.mesh_id;
+            meshId = child.userData.mesh_id;
 
-            let material;
-            let geometry;
-            let inst_matrix;
-            
             if (child.children.length > 0){
                 
                 for (const subchild of child.children) {
@@ -260,7 +262,7 @@ function createMaterialMap( gltf, material_map, qsGroup, defMaterial=null, color
                 });
             };
 
-            const material_key = material_map.get( material );
+            material_key = material_map.get( material );
             material_key.instCount++;
 
             if ( !material_key.unique_geoms.has( meshId )) {
@@ -285,11 +287,33 @@ function createMaterialMap( gltf, material_map, qsGroup, defMaterial=null, color
         };
     });
 
+    gltf.scene.traverse((child) => {
+        if (!child.isMesh) return;
+
+        // Dispose geometry
+        if (child.geometry) {
+            child.geometry.dispose();
+        }
+
+        // Dispose material(s)
+        if (child.material) {
+            if (Array.isArray(child.material)) {
+                child.material.forEach(disposeMaterial);
+            } else {
+                disposeMaterial(child.material);
+            }
+        };
+    });
+
     return material_map;
 }
 
 function appendMaterialMap(gltf, material_map, defMaterial=null ) {
     let visited = new Set();
+    let meshId;
+    let material;
+    let geometry;
+    let material_key;
 
     gltf.scene.traverse(( child ) => {
 
@@ -297,10 +321,7 @@ function appendMaterialMap(gltf, material_map, defMaterial=null ) {
             child.userData.mesh_id &&
             !visited.has(child.userData.mesh_id)
         ) {
-            const meshId = child.userData.mesh_id;
-
-            let material;
-            let geometry;
+            meshId = child.userData.mesh_id;
 
             if (child.children.length > 0){
                 for (const subchild of child.children) {
@@ -317,8 +338,6 @@ function appendMaterialMap(gltf, material_map, defMaterial=null ) {
             } else {
                 material = child.material;
             }
-            
-            let material_key;
 
             if ( !material_map.has(material) ) {
                 for (const material of material_map.keys()) {   // If material map does not have material, loop through all mesh ids until we find it
@@ -345,10 +364,36 @@ function appendMaterialMap(gltf, material_map, defMaterial=null ) {
         }
     });
 
+    gltf.scene.traverse((child) => {
+        if (!child.isMesh) return;
+
+        // Dispose geometry
+        if (child.geometry) {
+            child.geometry.dispose();
+        }
+
+        // Dispose material(s)
+        if (child.material) {
+            if (Array.isArray(child.material)) {
+                child.material.forEach(disposeMaterial);
+            } else {
+                disposeMaterial(child.material);
+            }
+        };
+    });
+
     return material_map;
 }
 
 function createBatchedMesh( meshes, material ){
+    let geom;
+    let lowres_geom;
+    let matrices;
+    let color;
+    let qsGroup;
+
+    let geom_id;
+    let lowres_geom_id;
 
     const batchedMesh = new THREE.BatchedMesh(
         meshes.instCount,
@@ -362,16 +407,15 @@ function createBatchedMesh( meshes, material ){
     batchedMesh.colors = [];
 
     meshes.unique_geoms.forEach((mesh) => {
-        const geom = mesh.geometry;
-        const lowres_geom = mesh.lowres_geometry;
-        const matrices = mesh.matrices;
-        const color = mesh.color;
-        const qsGroup = mesh.qsGroup;
+        geom = mesh.geometry;
+        lowres_geom = mesh.lowres_geometry;
+        matrices = mesh.matrices;
+        color = mesh.color;
+        qsGroup = mesh.qsGroup;
 
         if (matrices.length > 0){
-            const geom_id = batchedMesh.addGeometry( geom );
-            let lowres_geom_id;
-
+            geom_id = batchedMesh.addGeometry( geom );
+            
             if ( lowres_geom ) {
                 lowres_geom_id = batchedMesh.addGeometry( lowres_geom );
             } else {
@@ -529,6 +573,10 @@ function configGUI() {
         requestRender();
     });
 
+    gui.add(CONSTANTS, "startDolly").name("Dolly").onChange( v => {
+        CONSTANTS.startDolly = v;
+    });
+
     const layersFolder = gui.addFolder('Active Layers');
     layersFolder.add(CONSTANTS, "referenceGroup").name("Facade / Struct").onChange( v => {
         const struct_bm = struct_group.children.find(child => child.isBatchedMesh);
@@ -606,20 +654,25 @@ function requestRender() {
     ) {
         renderRequested = true;
         requestAnimationFrame( render );
-        perfMonitor.update(renderer, scene);
     };
 }
+
 
 controls.addEventListener( 'change', requestRender);
 window.addEventListener( 'resize', requestRender );
 
-renderer.render(scene, camera);
+
+let direction = new THREE.Vector3((-70,70,50));
+let swapDirection = false;
+let speed = 0.003;
 
 function animate() {
     
+    // renderer.render(scene, camera);
     requestAnimationFrame( animate );
     perfMonitor.update(renderer, scene);
 
+    requestRender();
 
 }
 
