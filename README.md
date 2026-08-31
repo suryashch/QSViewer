@@ -46,7 +46,7 @@ The engine determines the closest objects to the camera, using a spatial search 
 
 ![QSViewer Zoomed Shot](reports/img/cover-shot-2-lowres.gif)
 
-Additional details are available in the accompanying report, [A Game Developer's Approach to BIM](reports/a-game-dev-approach-to-bim.md)
+Additional details are available in the accompanying report, [A Game Developer's Approach to BIM](https://medium.com/@suryash.c/a-game-developers-approach-to-bim-9b4c75311ab6?sharedUserId=suryash.c)
 
 ---
 
