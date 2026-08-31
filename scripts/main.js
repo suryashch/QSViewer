@@ -6,7 +6,7 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 import { PerformanceMonitor } from './utils/PerformanceMonitor.js';
 import { FrameProfiler } from './utils/FrameProfiler.js';
-import { PerformanceGraphMonitor } from './utils/GraphMonitor.js';
+// import { PerformanceGraphMonitor } from './utils/GraphMonitor.js';
 
 import { ObjectBVH, acceleratedRaycast, INTERSECTED, NOT_INTERSECTED, computeBatchedBoundsTree } from 'three-mesh-bvh';
 
